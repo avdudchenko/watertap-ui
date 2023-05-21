@@ -1,4 +1,4 @@
-name: watertap-ui-env
+name: watertap-ui-sp
 channels:
   - conda-forge
 dependencies:
