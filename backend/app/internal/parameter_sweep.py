@@ -6,7 +6,6 @@ import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.am
 from importlib import import_module
 import idaes.logger as idaeslog
 
-from watertap.tools.parameter_sweep.multi_processing_param_sweep_func import do_mp_sweep
 
 _log = idaeslog.getLogger(__name__)
 
@@ -62,8 +61,17 @@ def run_analysis(
             "custom_do_param_sweep"
         )
         if custom_do_param_sweep is None:
-            custom_do_param_sweep = do_mp_sweep
+            try:
+                # try to import defualt parallel custom function wt (based on current pr)
+                from watertap.tools.parameter_sweep.multi_processing_param_sweep_func import (
+                    do_mp_sweep,
+                )
 
+                custom_do_param_sweep = do_mp_sweep
+            except:
+                # no custom function avialble, defualting to default serial behavior
+                custom_do_param_sweep = None
+                custom_do_param_sweep_kwargs = None
     ps = ParameterSweep(
         csv_results_file_name=results_path,
         optimize_function=opt_function,
