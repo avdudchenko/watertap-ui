@@ -1,7 +1,7 @@
 
 
 export const getFlowsheet = (id) => {
-    return fetch('http://localhost:8001/flowsheets/'+id+'/config?build=1', {mode: 'cors'});
+    return fetch(process.env.REACT_APP_BACKEND_SERVER+'/flowsheets/'+id+'/config?build=1', {mode: 'cors'});
     /*return new Promise((resolve, reject) => { 
         resolve(data3);
     });*/
@@ -9,7 +9,7 @@ export const getFlowsheet = (id) => {
 }; 
 
 export const saveFlowsheet = (id, data) => {
-    return fetch('http://localhost:8001/flowsheets/'+id+'/update', {
+    return fetch(process.env.REACT_APP_BACKEND_SERVER+'/flowsheets/'+id+'/update', {
         method: 'POST', 
         mode: 'cors',
         body: JSON.stringify(data)
@@ -17,7 +17,7 @@ export const saveFlowsheet = (id, data) => {
 }; 
 
 export const resetFlowsheet = (id) => {
-    return fetch('http://localhost:8001/flowsheets/'+id+'/reset', {
+    return fetch(process.env.REACT_APP_BACKEND_SERVER+'/flowsheets/'+id+'/reset', {
         method: 'GET', 
         mode: 'cors'
     });

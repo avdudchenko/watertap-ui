@@ -1,3 +1,3 @@
 export const getDiagram = (id) => {
-    return fetch('http://localhost:8001/flowsheets/'+id+'/diagram', {mode: 'cors'});
+    return fetch(process.env.REACT_APP_BACKEND_SERVER+'/flowsheets/'+id+'/diagram', {mode: 'cors'});
 }; 
