@@ -1,6 +1,6 @@
 
 export const solve = (id, data) => {
-    return fetch(env.REACT_APP_BACKEND_SERVER+'/flowsheets/'+id+'/solve', {
+    return fetch(process.env.REACT_APP_BACKEND_SERVER+'/flowsheets/'+id+'/solve', {
         method: 'POST', 
         mode: 'cors',
         body: JSON.stringify(data)
