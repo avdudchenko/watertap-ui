@@ -171,7 +171,7 @@ def run_parameter_sweep(flowsheet, info):
                 # _log.error(f'Sweep produced invalid results: {error_params}')
                 # raise HTTPException(500, detail=f"Sweep produced invalid results for input parameters: {error_params}")
             else:
-                print("{} {} {}".format(i, value[i], conversion_factors[i]))
+                # print("{} {} {}".format(i, value[i], conversion_factors[i]))
                 _log.info("{} {} {}".format(i, value[i], conversion_factors[i]))
                 conversion_factor = conversion_factors[i]
                 value[i] = value[i] * conversion_factor
