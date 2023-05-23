@@ -6,7 +6,6 @@ import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.am
 from importlib import import_module
 import idaes.logger as idaeslog
 
-from watertap.tools.parameter_sweep.multi_processing_param_sweep_func import do_mp_sweep
 
 _log = idaeslog.getLogger(__name__)
 
@@ -62,7 +61,7 @@ def run_analysis(
             "custom_do_param_sweep"
         )
         if custom_do_param_sweep is None:
-            custom_do_param_sweep = do_mp_sweep
+            custom_do_param_sweep_kwargs = None
 
     ps = ParameterSweep(
         csv_results_file_name=results_path,
@@ -172,6 +171,8 @@ def run_parameter_sweep(flowsheet, info):
                 # _log.error(f'Sweep produced invalid results: {error_params}')
                 # raise HTTPException(500, detail=f"Sweep produced invalid results for input parameters: {error_params}")
             else:
+                print("{} {} {}".format(i, value[i], conversion_factors[i]))
+                _log.info("{} {} {}".format(i, value[i], conversion_factors[i]))
                 conversion_factor = conversion_factors[i]
                 value[i] = value[i] * conversion_factor
     results_table["keys"] = keys
