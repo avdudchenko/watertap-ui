@@ -7,7 +7,7 @@ block_cipher = None
 # this file is not actually needed there, but we need the core directory 
 # to be present in the python executable to avoid errors being thrown
 added_files = [ 
-        ('../../../watertap/watertap/data/techno_economic/metab.yaml', 'watertap/core')
+        ('../../../watertap-dev/watertap/data/techno_economic/metab.yaml', 'watertap-dev/core')
         ]
 
 a = Analysis(

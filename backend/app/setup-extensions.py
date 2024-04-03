@@ -7,6 +7,7 @@ import certifi
 
 idaes_extensions_dir = Path.home() / ".watertap" / ".idaes"
 pyomo_extensions_dir = Path.home() / ".watertap" / ".pyomo_"
+
 def check_for_idaes_extensions():
     print('checking for idaes extensions')
     found_extensions = os.path.exists(idaes_extensions_dir)
