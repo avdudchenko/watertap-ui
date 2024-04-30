@@ -12,10 +12,11 @@ conda_prefix = os.environ["CONDA_PREFIX"]
 print(f"conda_prefix is {conda_prefix}")
 
 """ specify water tap path with setup.py file that contains entry points"""
-watertap_path = None
+watertap_path = r"D:\OneDrive\NAWI_work\Analysis\WaterTAP\watertap-dev\setup.py"
 # try to automaticly get watertap path if user does not provide one
 if watertap_path == None:
-    watertap_path = Path(watertap.__path__[0]).parents[0]
+    watertap_path = Path(watertap.__path__[0])
+    print(watertap_path)
     watertap_path = os.path.join(watertap_path, "setup.py")
 
 print(f"watertap path is: {watertap_path}")
