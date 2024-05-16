@@ -10,8 +10,8 @@ const isDev = require('electron-is-dev')
 const { spawn } = require("child_process")
 
 // Python server parameters
-const PY_PORT = 8001;
-const UI_PORT = 3000;
+const PY_PORT = process.env.REACT_APP_BACKEND_PORT;
+const UI_PORT = process.env.REACT_APP_FRONTEND_PORT;
 let uiReady = false
 
 const serverURL = `http://localhost:${PY_PORT}`

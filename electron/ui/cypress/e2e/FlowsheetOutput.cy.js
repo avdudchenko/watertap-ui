@@ -14,7 +14,7 @@ describe('Flowsheet Output Test', () => {
         var flowsheet_name = "Metab flowsheet"
         cy.intercept({
             method: "GET",
-            url: "http://localhost:8001/flowsheets/**",
+            url: process.env.REACT_APP_BACKEND_SERVER+"/flowsheets/**",
         }).as("loadFlowsheet");
         // cy.findByRole('link', {  name: flowsheet_name}).click()
         cy.findByText(flowsheet_name).click()
@@ -40,7 +40,7 @@ describe('Flowsheet Output Test', () => {
         //click on save and wait for api response
         // cy.intercept({
         //     method: "POST",
-        //     url: "http://localhost:8001/flowsheets/**",
+        //     url: process.env.REACT_APP_BACKEND_SERVER+'/flowsheets/**",
         // }).as("saveChanges");
         // cy.findAllByRole('button', {  name: /update flowsheet/i}).eq(0).click()
         // cy.wait("@saveChanges");
@@ -64,7 +64,7 @@ describe('Flowsheet Output Test', () => {
         //click on save and wait for api response
         // cy.intercept({
         //     method: "POST",
-        //     url: "http://localhost:8001/flowsheets/**",
+        //     url: process.env.REACT_APP_BACKEND_SERVER+'/flowsheets/**",
         // }).as("saveChanges");
         // cy.findAllByRole('button', {  name: /update flowsheet/i}).eq(0).click()
         // cy.wait("@saveChanges");
@@ -74,7 +74,7 @@ describe('Flowsheet Output Test', () => {
         //click on solve and wait for api response
         cy.intercept({
             method: "POST",
-            url: "http://localhost:8001/flowsheets/**",
+            url: process.env.REACT_APP_BACKEND_SERVER+"/flowsheets/**",
         }).as("run");
         cy.findAllByRole('button', {  name: /run/i}).eq(0).click()
         cy.wait("@run");
@@ -102,7 +102,7 @@ describe('Flowsheet Output Test', () => {
         //click on save (config) and wait for api response
         cy.intercept({
             method: "POST",
-            url: "http://localhost:8001/flowsheets/**",
+            url: process.env.REACT_APP_BACKEND_SERVER+"/flowsheets/**",
         }).as("saveConfig");
         cy.findByRole('button', {name: /save/i}).click()
         cy.wait("@saveConfig");

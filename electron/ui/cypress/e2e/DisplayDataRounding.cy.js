@@ -18,7 +18,7 @@ describe('Display Data Rounding', () => {
         var flowsheet_name = "Magprex flowsheet"
         cy.intercept({
             method: "GET",
-            url: "http://localhost:8001/flowsheets/**",
+            url: process.env.REACT_APP_BACKEND_SERVER+"/flowsheets/**",
         }).as("loadFlowsheet");
     //  cy.findByRole('link', {  name: flowsheet_name}).click()
         cy.findByText(flowsheet_name).click()
@@ -29,7 +29,7 @@ describe('Display Data Rounding', () => {
         //click on update and wait for api response
         // cy.intercept({
         //     method: "POST",
-        //     url: "http://localhost:8001/flowsheets/**",
+        //     url: process.env.REACT_APP_BACKEND_SERVER+"/flowsheets/**",
         // }).as("saveChanges");
         // cy.findAllByRole('button', {  name: /update flowsheet/i}).eq(0).click()
         // cy.wait("@saveChanges")
@@ -39,7 +39,7 @@ describe('Display Data Rounding', () => {
         //click on solve and wait for api response
         cy.intercept({
             method: "POST",
-            url: "http://localhost:8001/flowsheets/**",
+            url: process.env.REACT_APP_BACKEND_SERVER+"/flowsheets/**",
         }).as("run");
         cy.findAllByRole('button', {  name: /run/i}).eq(0).click()
         cy.wait("@run").its('response.statusCode').should('eq', 200);

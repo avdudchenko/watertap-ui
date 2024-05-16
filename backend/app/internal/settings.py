@@ -1,12 +1,28 @@
 """
 Configuration for the backend
 """
+
 from pathlib import Path
 import logging
 from typing import List, Union
 from pydantic import validator, field_validator
 from pydantic_settings import BaseSettings
 
+
+def get_env():
+
+    # env_loc = Path(__file__).parent
+    usr_id = None
+    with open("../../electron/ui/.env") as reader:
+        for line in reader.readlines():
+            if "user_id" in str(line):
+                line = str(line).split("=")
+                user_id = str(line[-1])
+                break
+    if user_id is None:
+        return "default"
+    else:
+        return user_id
 
 
 class AppSettings(BaseSettings):
@@ -19,28 +35,35 @@ class AppSettings(BaseSettings):
     # @validator("data_basedir", always=True)
     @field_validator("data_basedir")
     def validate_data_basedir(cls, v):
+        user_id = get_env()
         if v is None:
-            v = Path.home() / ".watertap" / "flowsheets"
+            v = Path.home() / ".watertap" / user_id / "flowsheets"
         v.mkdir(parents=True, exist_ok=True)
         return v
 
     # @validator("log_dir", always=True)
     @field_validator("log_dir")
     def validate_log_dir(cls, v):
+        user_id = get_env()
         if v is None:
-            v = Path.home() / ".watertap" / "logs"
+            v = Path.home() / ".watertap" / user_id / "logs"
         v.mkdir(parents=True, exist_ok=True)
-        
+
         loggingFormat = "[%(levelname)s] %(asctime)s %(name)s (%(filename)s:%(lineno)s): %(message)s"
-        loggingFileHandler = logging.handlers.RotatingFileHandler(v / "watertap-ui_backend_logs.log", backupCount=2, maxBytes=5000000)
-        logging.basicConfig(level=logging.INFO, format=loggingFormat, handlers=[loggingFileHandler])
+        loggingFileHandler = logging.handlers.RotatingFileHandler(
+            v / "watertap-ui_backend_logs.log", backupCount=2, maxBytes=5000000
+        )
+        logging.basicConfig(
+            level=logging.INFO, format=loggingFormat, handlers=[loggingFileHandler]
+        )
         return v
-    
+
     # @validator("custom_flowsheets_dir", always=True)
     @field_validator("custom_flowsheets_dir")
     def validate_custom_flowsheets_dir(cls, v):
+        user_id = get_env()
         if v is None:
-            v = Path.home() / ".watertap" / "custom_flowsheets"
+            v = Path.home() / ".watertap" / user_id / "custom_flowsheets"
         v.mkdir(parents=True, exist_ok=True)
         return v
 

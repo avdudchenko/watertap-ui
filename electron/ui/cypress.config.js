@@ -6,7 +6,7 @@ module.exports = defineConfig({
       // implement node event listeners here
       
     },
-    baseUrl: 'http://localhost:3000',
+    baseUrl: process.env.REACT_APP_FRONTEND_SERVER,
     video: true
   },
 });

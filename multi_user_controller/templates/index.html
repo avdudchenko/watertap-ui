@@ -1,0 +1,13 @@
+
+<!DOCTYPE html>
+<html>
+<t>Welcome to Alex.D's home server, temporary home of WaterTAP UI webapp </t>
+<p>Please enter a username for which to start up a new UI instance.</p>
+<p>UI instance start up may take up to 60 seconds.</p>
+<body>
+<form action="{{ url_for('start_new_ui_instance') }}" method="post">
+    <label for="username">User name:</label><br>
+    <input type="text" name="username"><br>
+    <button type="submit">Start UI</button>
+</form> 
+</html>
