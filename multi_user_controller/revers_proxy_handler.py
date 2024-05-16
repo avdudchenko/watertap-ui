@@ -148,7 +148,7 @@ def start_new_ui_instance():
             break
     return render_template(
         "ui_redirect.html",
-        url_refresh=f"10;URL={WWW_SITE_NAME}/{user_id}",
+        url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
     )  # redirect(f"/watertap_ui/{username}")
 
 
