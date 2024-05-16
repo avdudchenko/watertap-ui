@@ -9,6 +9,15 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
+def get_conversion_unit(flowsheet, key):
+    obj = flowsheet.fs_exp.model_objects[key].obj
+    ui_units = flowsheet.fs_exp.model_objects[key].ui_units
+    temp = Var(initialize=1, units=obj.get_units())
+    temp.construct()
+    crv = value(pyunits.convert(temp, to_units=ui_units))
+    return crv
+
+
 def set_up_sensitivity(m, solve, output_params):
     outputs = {}
     # optimize_kwargs = {"fail_flag": False}
@@ -95,10 +104,7 @@ def run_parameter_sweep(flowsheet, info):
                     and flowsheet.fs_exp.exports[key].ub is not None
                 ):
                     results_table["headers"].append(flowsheet.fs_exp.exports[key].name)
-                    conversion_factor = (
-                        flowsheet.fs_exp.exports[key].ub
-                        / flowsheet.fs_exp.exports[key].obj.ub
-                    )
+                    conversion_factor = get_conversion_unit(flowsheet, key)
                     try:
                         parameters.append(
                             {
@@ -132,10 +138,7 @@ def run_parameter_sweep(flowsheet, info):
             ):
                 results_table["headers"].append(flowsheet.fs_exp.exports[key].name)
                 try:
-                    conversion_factor = (
-                        flowsheet.fs_exp.exports[key].value
-                        / flowsheet.fs_exp.exports[key].obj.value
-                    )
+                    conversion_factor = get_conversion_unit(flowsheet, key)
                 except Exception as e:
                     conversion_factor = 1
                 conversion_factors.append(conversion_factor)
