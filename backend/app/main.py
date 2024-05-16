@@ -39,8 +39,9 @@ async def root():
 
 def get_env():
 
-    # env_loc = Path(__file__).parent
-    with open("../../electron/ui/.env") as reader:
+    env_loc = Path(__file__).parents[2]
+    loc = env_loc / "electron" / "ui" / ".env"
+    with open(loc) as reader:
         for line in reader.readlines():
             print(line)
             if "REACT_APP_BACKEND_PORT" in str(line):

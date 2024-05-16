@@ -13,7 +13,9 @@ def get_env():
 
     # env_loc = Path(__file__).parent
     usr_id = None
-    with open("../../electron/ui/.env") as reader:
+    env_loc = Path(__file__).parents[3]
+    loc = env_loc / "electron" / "ui" / ".env"
+    with open(loc) as reader:
         for line in reader.readlines():
             if "user_id" in str(line):
                 line = str(line).split("=")
