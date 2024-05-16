@@ -13,7 +13,8 @@ from start_unique_ui import start_uq_worker
 # requests_log = logging.getLogger("requests.packages.urllib3")
 # requests_log.setLevel(logging.DEBUG)
 # requests_log.propagate = True
-app = Flask(__name__)
+# app = Flask(__name__)
+app = Flask(__name__, static_folder="../electron/ui/build", static_url_path="/")
 
 
 SITE_NAME = "http://127.0.0.1:"
@@ -38,6 +39,55 @@ def load_current_lookup_table():
             pass
 
 
+def inplace_change(location, filename, old_string, new_string, modname=None):
+    # Safely read the input filename using 'with'
+    with open(os.path.join(location, filename)) as f:
+        s = f.read()
+        # if old_string not in s:
+        #     print('"{old_string}" not found in {filename}.'.format(**locals()))
+        #     return filename
+    if modname is not None:
+        sf = filename.split(".")[-1]
+        filename.replace("." + sf, "")
+        filename = filename + str(modname) + "." + sf
+    # Safely write the changed content, if found in the file
+    with open(os.path.join(location, filename), "w") as f:
+        print(
+            'Changing "{old_string}" to "{new_string}" in {filename}'.format(**locals())
+        )
+        s = re.sub(old_string, new_string, s)
+        f.write(s)
+    return filename
+
+
+@app.route("/watertap_ui/<int:user>")
+def ui_index(user):
+    path = inplace_change(
+        "../electron/ui/build",
+        "index.html",
+        "watertap_ui/?(.*?)/",
+        f"watertap_ui/{user}/",
+        modname=user,
+    )
+    return app.send_static_file(path)
+
+
+@app.route("/watertap_ui/<int:user>/<path:path>")
+def ui(user, path):
+    print(user, path)
+    if ".js" in path:
+        path = inplace_change(
+            "../electron/ui/build",
+            "static/js/main.4ce4f469.js",
+            "https://avdsystems.xyz:443/watertap_ui/?(.*?)/",
+            f"https://avdsystems.xyz:443/watertap_ui/{user}/",
+            modname=user,
+        )
+    print(path)
+    result = app.send_static_file(path)
+    return result
+
+
 def get_port(path):
     PORT_REFERENCE = load_current_port_refs()
     path_split = path.split("/")
@@ -59,28 +109,28 @@ def get_port(path):
         return False
 
 
-@app.route("/watertap_ui/<string:user>/static/js/bundle.js", methods=["GET", "POST"])
-def manual_load(user):
-    PORT_REFERENCE = load_current_port_refs()
-    resp = requests.get(
-        f"{SITE_NAME}{PORT_REFERENCE[user]['frontend_port']}/watertap_ui/{user}/static/js/bundle.js"
-    )
-    cors_header = ("Access-Control-Allow-Origin", "*")
-    excluded_headers = [
-        "content-encoding",
-        # "content-length",
-        "transfer-encoding",
-        # "content-type",
-        # "connection",
-    ]
-    headers = [
-        (name, value)
-        for (name, value) in resp.raw.headers.items()
-        if name.lower() not in excluded_headers
-    ]
-    headers.append(cors_header)
-    response = Response(resp.content, resp.status_code, headers)
-    return response
+# @app.route("/watertap_ui/<string:user>/static/js/bundle.js", methods=["GET", "POST"])
+# def manual_load(user):
+#     PORT_REFERENCE = load_current_port_refs()
+#     resp = requests.get(
+#         f"{SITE_NAME}{PORT_REFERENCE[user]['frontend_port']}/watertap_ui/{user}/static/js/bundle.js"
+#     )
+#     cors_header = ("Access-Control-Allow-Origin", "*")
+#     excluded_headers = [
+#         "content-encoding",
+#         # "content-length",
+#         "transfer-encoding",
+#         # "content-type",
+#         # "connection",
+#     ]
+#     headers = [
+#         (name, value)
+#         for (name, value) in resp.raw.headers.items()
+#         if name.lower() not in excluded_headers
+#     ]
+#     headers.append(cors_header)
+#     response = Response(resp.content, resp.status_code, headers)
+#     return response
 
 
 @app.route("/start_new_ui_instance", methods=["GET", "POST"])

@@ -6,6 +6,8 @@ import logging
 
 import json
 from start_unique_ui import start_uq_worker
+import re
+import os
 
 # You must initialize logging, otherwise you'll not see debug output.
 # logging.basicConfig()
@@ -19,14 +21,53 @@ SITE_NAME = "http://127.0.0.1:"
 WWW_SITE_NAME = "https://avdsystems.xyz:443/watertap_ui"
 
 
-@app.route("/")
-def index():
-    return app.send_static_file("index.html")
+def inplace_change(location, filename, old_string, new_string, modname=None):
+    # Safely read the input filename using 'with'
+    with open(os.path.join(location, filename)) as f:
+        s = f.read()
+        # if old_string not in s:
+        #     print('"{old_string}" not found in {filename}.'.format(**locals()))
+        #     return filename
+    if modname is not None:
+        sf = filename.split(".")[-1]
+        filename.replace("." + sf, "")
+        filename = filename + str(modname) + "." + sf
+    # Safely write the changed content, if found in the file
+    with open(os.path.join(location, filename), "w") as f:
+        print(
+            'Changing "{old_string}" to "{new_string}" in {filename}'.format(**locals())
+        )
+        s = re.sub(old_string, new_string, s)
+        f.write(s)
+    return filename
 
 
-@app.route("/watertap_ui/10030/static/js/main.e81501ae.js")
-def ui():
-    return app.send_static_file("static/js/main.e81501ae.js")
+@app.route("/watertap_ui/<int:user>")
+def index(user):
+    path = inplace_change(
+        "../electron/ui/build",
+        "index.html",
+        "watertap_ui/?(.*?)/",
+        f"watertap_ui/{user}/",
+        modname=user,
+    )
+    return app.send_static_file(path)
+
+
+@app.route("/watertap_ui/<int:user>/<path:path>")
+def ui(user, path):
+    print(user, path)
+    if ".js" in path:
+        path = inplace_change(
+            "../electron/ui/build",
+            "static/js/main.4ce4f469.js",
+            "https://avdsystems.xyz:443/watertap_ui/?(.*?)/",
+            f"https://avdsystems.xyz:443/watertap_ui/{user}/",
+            modname=user,
+        )
+    print(path)
+    result = app.send_static_file(path)
+    return result
 
 
 if __name__ == "__main__":
