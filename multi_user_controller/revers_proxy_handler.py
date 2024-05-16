@@ -6,7 +6,8 @@ import logging
 
 import json
 from start_unique_ui import start_uq_worker
-
+import os
+import re
 # You must initialize logging, otherwise you'll not see debug output.
 # logging.basicConfig()
 # logging.getLogger().setLevel(logging.DEBUG)
@@ -78,9 +79,9 @@ def ui(user, path):
     if ".js" in path:
         path = inplace_change(
             "../electron/ui/build",
-            "static/js/main.4ce4f469.js",
+            path,
             "https://avdsystems.xyz:443/watertap_ui/?(.*?)/",
-            f"https://avdsystems.xyz:443/watertap_ui/{user}/",
+            f"https://avdsystems.xyz:443/watertap_ui_backend/{user}/",
             modname=user,
         )
     print(path)
@@ -157,7 +158,7 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/watertap_ui/<path:path>", methods=["GET", "POST", "OPTIONS", "DELETE"])
+@app.route("/watertap_ui_backend/<path:path>", methods=["GET", "POST", "OPTIONS", "DELETE"])
 def proxy(path):
     global SITE_NAME
     global PORT_REFERENCE
@@ -167,7 +168,7 @@ def proxy(path):
     path = get_port(path)
     if path != False:
         req_string = request.query_string.decode()
-        print("sent_path", f"{SITE_NAME}/watertap_ui/{path}", req_string)
+        print("sent_path", f"{SITE_NAME}/watertap_ui_backend/{path}", req_string)
         print(f"{SITE_NAME}{path}", req_string)  # , request.method)
         if req_string != "":
             path = f"{path}?{req_string}"
