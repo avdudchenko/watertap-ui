@@ -21,66 +21,6 @@ export default function OutputComparisonTable(props) {
     
     }, [historyData])
 
-useEffect(()=>{
-  listConfigNames(params.id, outputData.inputData.version)
-  .then(response => response.json())
-  .then((data)=>{
-    console.log("list config names:", data);
-    setPastConfigs(data)
-    var tempHistory = []
-    for (const config of data) {
-      loadConfig(params.id, config)
-      .then(response => response.json())
-      .then((data2)=>{
-      tempHistory.push({name: config.replaceAll('"',''), data:data2})
-      setHistoryData([...tempHistory])
-      }).catch((err)=>{
-          console.error("unable to get load config: ",err)
-      });
-  }
-  }).catch((err)=>{
-      console.error("unable to get list of config names: ",err)
-  })
-  
-}, []);
-
-const organizeVariables = () => {
-  var tempHistory = []
-  for (const bvars of historyData) {
-    let var_sections = {}
-    let tempVariables = {}
-    let tempName = bvars.name
-    for (const [key, v] of Object.entries(bvars.data.outputData.exports)) {
-        
-        let catg
-        let is_input = v.is_input
-        let is_output = v.is_output
-        if (is_input) catg = v.input_category
-        if (is_output) catg = v.output_category
-        if (catg === null) {
-            catg = ""
-        }
-        if (!Object.hasOwn(var_sections, catg)) {
-            var_sections[catg] = {display_name: catg, variables: [], input_variables:[], output_variables:[]}
-        }
-        if (!Object.hasOwn(tempVariables, catg)) {
-          tempVariables[catg] = {variables: [], input_variables:[], output_variables:[]}
-      }
-      tempVariables[catg].variables.push(v)
-      var_sections[catg]["variables"] = [...tempVariables[catg].variables];
-        if(is_output) {
-          tempVariables[catg].output_variables.push(v)
-          var_sections[catg]["output_variables"] = [...tempVariables[catg].output_variables];
-        }
-    }
-    tempHistory.push({name: tempName, data: var_sections})
-    setHistoryDataOrganized([...tempHistory])
-    setLeftConfigIndex(tempHistory.length-1)
-    setShowTable(true)
-    // console.log("historyDataOrganized",tempHistory)
-  }
-  
-}
     const handleLeftConfigSelection = (event) => {
       setLeftConfigIndex(event.target.value)
     }
