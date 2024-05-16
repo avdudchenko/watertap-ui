@@ -5,6 +5,9 @@ import json
 import multiprocessing
 from multiprocessing import Pipe
 import random
+import watertap_ui
+
+from pathlib import Path
 
 global NUMBER_OF_RUNNING_UIS
 global BUFFER
@@ -24,6 +27,7 @@ class uq_manager:
         # self.cur_unique_ui_id += random.randrange(1000, 10000, 1)
         self.base_url = base_url
         self.used_apps = 0
+        self.watertap_ui_path = Path(__file__).parent.parent
 
     def start_unique_ui(
         self,
@@ -48,10 +52,28 @@ class uq_manager:
                 writer.write(f"BROWSER=none\n")
                 writer.write(f"user_id={ui_id}")
 
+            print("started")
             self.update_jsconfig(f"/watertap_ui/{ui_id}")
+            backend_location = self.watertap_ui_path / "backend" / "app" / "main.py"
+            # rc = subprocess.run(
+            #     [
+            #         f"conda activate watertap-ui-env",
+            #         f"python {backend_location} {backend_port}",
+            #     ],
+            #     stdout=subprocess.DEVNULL,
+            #     stderr=subprocess.STDOUT,
+            # )
+            # time.sleep(1)
+            # rc = subprocess.Popen(
+            #     "start_ui.bat",
+            #     # stdout=subprocess.DEVNULL,
+            #     # stderr=subprocess.STDOUT,
+            # )
             rc = subprocess.Popen(
-                "start_ui.bat", creationflags=subprocess.CREATE_NEW_CONSOLE
-            )  # , shell=True)
+                "start_ui.bat",
+                # stdout=subprocess.DEVNULL,
+                # stderr=subprocess.STDOUT,
+            )
             print("started")
             self.current_apps[ui_id] = {
                 "frontend_port": str(front_port),
@@ -60,7 +82,7 @@ class uq_manager:
             }
             self.current_rcs[ui_id] = rc
             self.update_current_uqs()
-            time.sleep(8)
+            # time.sleep(8)
 
     def generate_unique_UI(self, id_nums=5):
         print("Starting uniq ui", str(int(self.cur_unique_ui_id)))
@@ -106,7 +128,7 @@ def _uq_worker(pipe_in, base_url):
     uq = uq_manager(base_url)
     global NUMBER_OF_RUNNING_UIS
     global BUFFER
-    start_pause = 8
+    start_pause = 5
     last_update = time.time() - start_pause
     while True:
         if pipe_in.poll():
@@ -132,8 +154,8 @@ def start_uq_worker(base_url):
 
 
 if __name__ == "__main__":
-    uq_pipe = start_uq_worker()
-    uq_pipe.send("alex")
+    uq_pipe = start_uq_worker(base_url="test")
+    # uq_pipe.send("alex")
     # uq = uq_manager()
     # uq.start_unique_ui(front_port=3000, backend_port=8000, ui_id="alex")
     # # uq.start_unique_ui(front_port=3010, backend_port=8010, ui_id="ben")
