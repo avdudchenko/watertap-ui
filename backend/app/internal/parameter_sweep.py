@@ -5,12 +5,6 @@ from watertap.tools.parameter_sweep import LinearSample, ParameterSweep, paramet
 import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex as magprex
 from importlib import import_module
 import idaes.logger as idaeslog
-from pyomo.environ import (
-    ConcreteModel,
-    value,
-    Var,
-    units as pyunits,
-)
 
 _log = idaeslog.getLogger(__name__)
 
