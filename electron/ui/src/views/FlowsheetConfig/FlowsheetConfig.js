@@ -10,7 +10,7 @@ import ConfigInput from "./ConfigInput/ConfigInput";
 import ConfigOutput from "./ConfigOutput/ConfigOutput";
 import SolveDialog from "../../components/SolveDialog/SolveDialog"; 
 import ErrorBar from "../../components/ErrorBar/ErrorBar";
-import ConfigOutputComparison from './ConfigOutput/OutputComparison'
+import ConfigOutputComparisonTable from './ConfigOutput/OutputComparisonTable'
 import BuildOptions from '../../components/BuildOptions/BuildOptions';
 
 
@@ -51,7 +51,7 @@ export default function FlowsheetConfig(props) {
     const [tabValue, setTabValue] = useState(0);
     const [title, setTitle] = useState("");
     const [solveDialogOpen, setSolveDialogOpen] = useState(false);
-    const [ sweep, setSweep ] = useState(false)
+    const [ sweep, setSweep ] = useState(true)
     // const [outputData, setOutputData] = useState(null);
     const [openSuccessSaveConfirmation, setOpenSuccessSaveConfirmation] = React.useState(false);
     const [openErrorMessage, setOpenErrorMessage] = useState(false);
@@ -95,13 +95,13 @@ export default function FlowsheetConfig(props) {
     }, [params.id]);
 
     useEffect(() => {
-      // console.log("flowsheet data use effect")
-      // console.log(flowsheetData)
       try {
-        if (flowsheetData.inputData.model_objects && Object.keys(flowsheetData.inputData.model_objects).length > 0) {
+        if (Object.keys(flowsheetData.inputData.exports).length > 0) {
+          // console.log('flowsheet is indeed built')
           setIsBuilt(true)
-        } 
-        // else console.log('flowsheet is not built')
+        } else {
+          // console.log('flowsheet is not built')
+        }
       } catch (e){
         // console.log('unable to check for model objects: ',e)
       }
@@ -151,7 +151,7 @@ export default function FlowsheetConfig(props) {
     };
 
     //send updated flowsheet data
-    const updateFlowsheetData = (data, solve, addOutputData) => {
+    const updateFlowsheetData = (data, solve) => {
       // console.log(">main updateFlowsheetData:",data);
       if(solve==="solve")
       { 
@@ -162,7 +162,7 @@ export default function FlowsheetConfig(props) {
       {
         //check if sweep variables all have lower and upper bounds
         let goodToGo = true
-        for (let each of Object.entries(data.model_objects)) {
+        for (let each of Object.entries(data.exports)) {
           if(each[1].is_sweep) {
             if(each[1].ub === null || each[1].lb === null) goodToGo=false
           }
@@ -181,12 +181,7 @@ export default function FlowsheetConfig(props) {
       }
       else if(solve=== "UPDATE_CONFIG"){
         // setFlowsheetData(data)
-        if (addOutputData) {
-          handleSave(data.inputData, true, data.outputData);
-        } else {
-          handleSave(data.inputData, true);
-        }
-        
+        handleSave(data.inputData, true);
       }
     };
 
@@ -206,7 +201,7 @@ export default function FlowsheetConfig(props) {
       setSolveDialogOpen(false);
     };
 
-    const handleSave = (data, update, outputData) => {
+    const handleSave = (data, update) => {
       // console.log("handle save.....",data);
       saveFlowsheet(params.id, data)
       .then(response => {
@@ -216,13 +211,6 @@ export default function FlowsheetConfig(props) {
             // console.log("new Flowsheet Data:", data); 
             let tempFlowsheetData = {...flowsheetData}
             tempFlowsheetData.inputData = data
-            if (outputData) {
-              // if(outputData.sweep_results && Object.keys(outputData.sweep_results).length > 0) {
-              //   console.log('this one has sweep')
-              // }
-              tempFlowsheetData.outputData = outputData
-
-            }
             if (update) {
               console.log("SETTING FLOWSHEET DATA")
               setFlowsheetData(tempFlowsheetData)
@@ -293,7 +281,7 @@ export default function FlowsheetConfig(props) {
     }
 
     return ( 
-      <Container maxWidth={false}>
+      <Container>
       {(loadingFlowsheetData) ? 
           (
             <Dialog open={loadingFlowsheetData} fullWidth={true} maxWidth="md">
@@ -391,7 +379,8 @@ export default function FlowsheetConfig(props) {
                   </ConfigOutput>
                 </TabPanel> 
                 <TabPanel value={tabValue} index={2}>
-                  <ConfigOutputComparison outputData={flowsheetData} />
+                  <ConfigOutputComparisonTable outputData={flowsheetData}>
+                  </ConfigOutputComparisonTable>
                 </TabPanel> 
                 </Box>
               }
