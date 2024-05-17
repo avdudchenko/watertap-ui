@@ -1,5 +1,5 @@
 from flask import Flask, request, redirect, Response, render_template
-
+from waitress import serve
 import requests
 import time
 import logging
@@ -253,4 +253,5 @@ if __name__ == "__main__":
     global uq_pipe
     uq_pipe = start_uq_worker(WWW_SITE_NAME)
 
-    app.run(debug=False, port=500)
+    # app.run(debug=False, port=500)
+    serve(app, host="http://localhost", port=500)
