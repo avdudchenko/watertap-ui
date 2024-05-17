@@ -22,6 +22,7 @@ class uq_manager:
         self.user_lookup = {}
         self.live_servers = {}
         self.current_rcs = {}
+        self.load_prior_setting()
         self.front_port = 3000
         self.backend_port = 8000
         self.port_step = 2
@@ -124,8 +125,11 @@ class uq_manager:
             json.dump(self.user_lookup, f)
 
     def load_prior_setting(self):
-        with open("user_lookup.json") as f:
-            self.current_apps = json.load(f)
+        try:
+            with open("user_lookup.json") as f:
+                self.current_apps = json.load(f)
+        except FileNotFoundError:
+            pass
 
     def update_jsconfig(self, address_base):
         for i in range(10):
