@@ -109,7 +109,9 @@ def run_parameter_sweep(flowsheet, info):
                     flowsheet.fs_exp.model_objects[key].lb is not None
                     and flowsheet.fs_exp.model_objects[key].ub is not None
                 ):
-                    results_table["headers"].append(flowsheet.fs_exp.exports[key].name)
+                    results_table["headers"].append(
+                        flowsheet.fs_exp.model_objects[key].name
+                    )
                     conversion_factor = get_conversion_unit(flowsheet, key)
                     try:
                         parameters.append(
