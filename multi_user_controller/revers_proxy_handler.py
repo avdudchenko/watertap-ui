@@ -254,4 +254,5 @@ if __name__ == "__main__":
     uq_pipe = start_uq_worker(WWW_SITE_NAME)
 
     # app.run(debug=False, port=500)
-    serve(app, host="http://localhost", port=500)
+
+    serve(app, host="127.0.0.1", port=500)
