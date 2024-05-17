@@ -11,7 +11,7 @@ from pathlib import Path
 
 global NUMBER_OF_RUNNING_UIS
 global BUFFER
-NUMBER_OF_RUNNING_UIS = 3
+NUMBER_OF_RUNNING_UIS = 25
 BUFFER = 2
 
 
@@ -128,7 +128,7 @@ def _uq_worker(pipe_in, base_url):
     uq = uq_manager(base_url)
     global NUMBER_OF_RUNNING_UIS
     global BUFFER
-    start_pause = 5
+    start_pause = 10
     last_update = time.time() - start_pause
     while True:
         if pipe_in.poll():
