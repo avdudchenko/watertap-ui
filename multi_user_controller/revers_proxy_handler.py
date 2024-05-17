@@ -22,6 +22,8 @@ app = Flask(__name__, static_folder="../electron/ui/build", static_url_path="/")
 SITE_NAME = "http://127.0.0.1:"
 WWW_SITE_NAME = "https://avdsystems.xyz:443/watertap_ui"
 
+ACTIVE_SESSIONS = {}
+
 
 def load_current_port_refs():
     for i in range(10):
@@ -29,6 +31,7 @@ def load_current_port_refs():
             f = open("current_servers.json")
             return json.load(f)
         except IOError:
+            time.sleep(0.5)
             pass
 
 
@@ -38,21 +41,17 @@ def load_current_lookup_table():
             f = open("user_lookup.json")
             return json.load(f)
         except IOError:
+            time.sleep(0.5)
             pass
 
 
 def inplace_change(location, filename, old_string, new_string, modname=None):
-    # Safely read the input filename using 'with'
     with open(os.path.join(location, filename)) as f:
         s = f.read()
-        # if old_string not in s:
-        #     print('"{old_string}" not found in {filename}.'.format(**locals()))
-        #     return filename
     if modname is not None:
         sf = filename.split(".")[-1]
         filename.replace("." + sf, "")
         filename = filename + str(modname) + "." + sf
-    # Safely write the changed content, if found in the file
     with open(os.path.join(location, filename), "w") as f:
         print(
             'Changing "{old_string}" to "{new_string}" in {filename}'.format(**locals())
@@ -90,21 +89,14 @@ def ui(user, path):
     return result
 
 
-def get_port(path):
+def get_port(user, path):
     PORT_REFERENCE = load_current_port_refs()
-    path_split = path.split("/")
     if "flowsheets" in path:
-
-        path = path.replace(
-            path_split[0],
-            PORT_REFERENCE[f"{path_split[0]}"]["backend_port"],  # /flowsheets"]
-        )
+        path = f'{PORT_REFERENCE[user]["backend_port"]}/{path}'
         print("updated path", path)
         return path
-    elif path_split[0] in PORT_REFERENCE.keys():
-        path = path.replace(
-            path_split[0], PORT_REFERENCE[f"{path_split[0]}"]["frontend_port"]
-        )
+    elif user in PORT_REFERENCE.keys():
+        path = f'{PORT_REFERENCE[user]["frontend_port"]}/{path}'
         print("updated path", path)
         return path
     else:
@@ -140,11 +132,11 @@ def start_new_ui_instance():
     print(request)
     username = request.form["username"]
     global uq_pipe
+    global ACTIVE_SESSIONS
     uq_pipe.send(username)
     for i in range(60):
-        time.sleep(2)
+        time.sleep(1)
         lookup = load_current_lookup_table()
-
         user_id_data = lookup.get(username)
         if user_id_data is not None:
             user_id = user_id_data["user_id"]
@@ -154,7 +146,8 @@ def start_new_ui_instance():
                 unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
             else:
                 unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
-            
+            global ACTIVE_SESSIONS
+            ACTIVE_SESSIONS[user_id] = request.Session()
             break
 
     return render_template(
@@ -171,24 +164,27 @@ def index():
 
 
 @app.route(
-    "/watertap_ui_backend/<path:path>", methods=["GET", "POST", "OPTIONS", "DELETE"]
+    "/watertap_ui_backend/<string:user>/<path:path>",
+    methods=["GET", "POST", "OPTIONS", "DELETE"],
 )
-def proxy(path):
+def proxy(user, path):
     global SITE_NAME
     global PORT_REFERENCE
     # path = string
     print("original_path", path)
 
-    path = get_port(path)
+    path = get_port(user)
     if path != False:
         req_string = request.query_string.decode()
-        print("sent_path", f"{SITE_NAME}/watertap_ui_backend/{path}", req_string)
+        print("sent_path", f"{SITE_NAME}/watertap_ui_backend/{user}/{path}", req_string)
         print(f"{SITE_NAME}{path}", req_string)  # , request.method)
+        global ACTIVE_SESSIONS
+        ACTIVE_SESSIONS[user] = request.Session()
         if req_string != "":
             path = f"{path}?{req_string}"
         if request.method == "GET":
             ts = time.time()
-            resp = requests.get(f"{SITE_NAME}{path}")
+            resp = ACTIVE_SESSIONS[user].get(f"{SITE_NAME}{path}")
             print("get", time.time() - ts)
             ts = time.time()
             excluded_headers = []
@@ -201,15 +197,7 @@ def proxy(path):
             ]
 
             cors_header = ("Access-Control-Allow-Origin", "*")
-            # if "list" in path:
-            #     print(path)
-            #     print(resp.raw.headers)
-            #     print("responce", resp.json())
 
-            #     resp_data = resp.json()
-            # else:
-            #     resp_data = resp.content
-            #     # respo.content.js
             headers = [
                 (name, value)
                 for (name, value) in resp.raw.headers.items()
@@ -223,7 +211,7 @@ def proxy(path):
             return response
         elif request.method == "POST":
             # print(request.get_data())
-            resp = requests.post(
+            resp = ACTIVE_SESSIONS[user].post(
                 f"{SITE_NAME}{path}", data=request.get_data()
             )  # json=request.get_json())
             excluded_headers = [
@@ -244,7 +232,7 @@ def proxy(path):
             response = Response(resp.content, resp.status_code, headers)
             return response
         elif request.method == "DELETE":
-            resp = requests.delete(f"{SITE_NAME}{path}").content
+            resp = ACTIVE_SESSIONS[user].delete(f"{SITE_NAME}{path}").content
             response = Response(resp.content, resp.status_code, headers)
         return response
 
