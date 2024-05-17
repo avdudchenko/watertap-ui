@@ -37,7 +37,7 @@ class uq_manager:
         backend_port=None,
         ui_id="123",
     ):
-        if ui_id not in self.current_rcs:
+        if str(ui_id) not in self.current_rcs:
             if front_port is None:
                 front_port = self.front_port + self.port_step
                 self.front_port = front_port
@@ -46,16 +46,18 @@ class uq_manager:
                 self.backend_port = backend_port
             # configure .env for UI
             with open("../electron/ui/.env", "w") as writer:
-                writer.write(f"REACT_APP_BACKEND_SERVER={self.base_url}/{ui_id}\n")
-                writer.write(f"REACT_APP_FRONTEND_SERVER={self.base_url}/{ui_id}\n")
+                writer.write(f"REACT_APP_BACKEND_SERVER={self.base_url}/{str(ui_id)}\n")
+                writer.write(
+                    f"REACT_APP_FRONTEND_SERVER={self.base_url}/{str(ui_id)}\n"
+                )
                 writer.write(f"REACT_APP_BACKEND_PORT={backend_port}\n")
                 writer.write(f"REACT_APP_FRONTEND_PORT={front_port}\n")
                 writer.write(f"port={front_port}\n")
                 writer.write(f"BROWSER=none\n")
-                writer.write(f"user_id={ui_id}")
+                writer.write(f"user_id={str(ui_id)}")
 
             print("started")
-            self.update_jsconfig(f"/watertap_ui/{ui_id}")
+            self.update_jsconfig(f"/watertap_ui/{str(ui_id)}")
             backend_location = self.watertap_ui_path / "backend" / "app" / "main.py"
             # rc = subprocess.run(
             #     [
@@ -77,12 +79,12 @@ class uq_manager:
                 # stderr=subprocess.STDOUT,
             )
             print("started")
-            self.current_apps[ui_id] = {
+            self.current_apps[str(str(ui_id))] = {
                 "frontend_port": str(front_port),
                 "backend_port": str(backend_port),
                 "user_name": "NA",
             }
-            self.current_rcs[ui_id] = rc
+            self.current_rcs[str(ui_id)] = rc
             self.update_current_uqs()
             # time.sleep(8)
             return f"http://127.0.0.1:{backend_port}/"
@@ -91,7 +93,7 @@ class uq_manager:
     def generate_unique_UI(self, id_nums=None):
         print("Starting uniq ui", str(int(self.cur_unique_ui_id)))
         if id_nums is None:
-            while self.cur_unique_ui_id not in self.current_apps:
+            while str(self.cur_unique_ui_id) in str(self.current_apps.keys()):
                 self.cur_unique_ui_id += 10
             result = self.start_unique_ui(ui_id=str(int(self.cur_unique_ui_id)))
         else:
@@ -101,10 +103,13 @@ class uq_manager:
     def assign_name_to_ui(self, name):
         if self.user_lookup.get(name) is None:
             for ui_id in self.current_apps:
-                if self.current_apps[ui_id]["user_name"] == "NA":
-                    self.current_apps[ui_id]["user_name"] = name
-                    self.user_lookup[name] = {"user_id": ui_id, "first_login": True}
-                    self.live_servers[name] = [ui_id]
+                if self.current_apps[str(ui_id)]["user_name"] == "NA":
+                    self.current_apps[str(ui_id)]["user_name"] = name
+                    self.user_lookup[name] = {
+                        "user_id": str(ui_id),
+                        "first_login": True,
+                    }
+                    self.live_servers[name] = [str(ui_id)]
                     self.used_apps += 1
                     self.update_lookup()
                     self.update_current_uqs()
@@ -188,5 +193,5 @@ if __name__ == "__main__":
     uq_pipe = start_uq_worker(base_url="test")
     # uq_pipe.send("alex")
     # uq = uq_manager()
-    # uq.start_unique_ui(front_port=3000, backend_port=8000, ui_id="alex")
-    # # uq.start_unique_ui(front_port=3010, backend_port=8010, ui_id="ben")
+    # uq.start_unique_ui(front_port=3000, backend_port=8000, str(ui_id)="alex")
+    # # uq.start_unique_ui(front_port=3010, backend_port=8010, str(ui_id)="ben")
