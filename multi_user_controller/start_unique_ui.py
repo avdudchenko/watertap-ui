@@ -8,6 +8,7 @@ import random
 import watertap_ui
 
 from pathlib import Path
+import requests
 
 global NUMBER_OF_RUNNING_UIS
 global BUFFER
@@ -83,11 +84,14 @@ class uq_manager:
             self.current_rcs[ui_id] = rc
             self.update_current_uqs()
             # time.sleep(8)
+            return f"http://127.0.0.1:{backend_port}/"
+        return None
 
     def generate_unique_UI(self, id_nums=5):
         print("Starting uniq ui", str(int(self.cur_unique_ui_id)))
-        self.start_unique_ui(ui_id=str(int(self.cur_unique_ui_id)))
+        result = self.start_unique_ui(ui_id=str(int(self.cur_unique_ui_id)))
         self.cur_unique_ui_id += 10  # random.randrange(1000, 10000, 1)
+        return result
 
     def assign_name_to_ui(self, name):
         if self.current_lookup.get(name) is None:
@@ -124,12 +128,21 @@ class uq_manager:
             json.dump(jsconfig, f)
 
 
+def request_check(url):
+    try:
+        r = requests.get(url, timeout=1)
+        # print(r.content)
+        r = r.json()
+        return r["message"] == "Hello FastAPI"
+    except requests.exceptions.ConnectTimeout:
+        return False
+
+
 def _uq_worker(pipe_in, base_url):
     uq = uq_manager(base_url)
     global NUMBER_OF_RUNNING_UIS
     global BUFFER
-    start_pause = 5
-    last_update = time.time() - start_pause
+    last_request = None
     while True:
         if pipe_in.poll():
             name = pipe_in.recv()
@@ -138,10 +151,12 @@ def _uq_worker(pipe_in, base_url):
         elif (
             len(uq.current_apps) < NUMBER_OF_RUNNING_UIS
             or (len(uq.current_apps) - uq.used_apps) < BUFFER
-        ) and (time.time() - last_update) > start_pause:
-
-            uq.generate_unique_UI()
-            last_update = time.time()
+        ):
+            if last_request is None:
+                last_request = uq.generate_unique_UI()
+            elif request_check(last_request):
+                last_request = uq.generate_unique_UI()
+            # print(last_request)
         else:
             time.sleep(0.25)
 
