@@ -12,7 +12,7 @@ import requests
 
 global NUMBER_OF_RUNNING_UIS
 global BUFFER
-NUMBER_OF_RUNNING_UIS = 3
+NUMBER_OF_RUNNING_UIS = 25
 BUFFER = 2
 
 
