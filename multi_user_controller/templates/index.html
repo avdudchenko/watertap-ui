@@ -10,7 +10,7 @@
 <form action="{{ url_for('start_new_ui_instance') }}" method="post">
     <h3><label for="username">To start the UI in your browser please enter a unique user name, 
         you can re-access your UI session using this user name:</label><br>
-    <input type="text" name="username"><br>
+    <input type="text" name="username" required><br>
     <button type="submit">Start UI</button></h3>
 </form> 
 </body>

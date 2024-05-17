@@ -101,6 +101,7 @@ class uq_manager:
         return result
 
     def assign_name_to_ui(self, name):
+        assigned=False
         if self.user_lookup.get(name) is None:
             for ui_id in self.current_apps:
                 if self.current_apps[str(ui_id)]["user_name"] == "NA":
@@ -113,14 +114,20 @@ class uq_manager:
                     self.used_apps += 1
                     self.update_lookup()
                     self.update_current_uqs()
-                    break
+                    return True
+
         else:
             print(f"User {name} already exists")
-            if self.live_servers.get(name) == None:
+            if self.current_apps.get(self.user_lookup[name]["user_id"]) == None:
                 self.generate_unique_UI(id_nums=self.user_lookup[name]["user_id"])
                 self.used_apps += 1
+            else:
+                self.current_apps[self.user_lookup[name]["user_id"]]['user_name']=name
             self.user_lookup[name]["first_login"] = False
+
             self.update_lookup()
+            return True
+        return assigned
 
     def update_current_uqs(self):
         with open("current_servers.json", "w") as f:
@@ -133,7 +140,7 @@ class uq_manager:
     def load_prior_setting(self):
         try:
             with open("user_lookup.json") as f:
-                self.current_apps = json.load(f)
+                self.user_lookup = json.load(f)
         except FileNotFoundError:
             pass
 
@@ -166,12 +173,13 @@ def _uq_worker(pipe_in, base_url):
     global NUMBER_OF_RUNNING_UIS
     global BUFFER
     last_request = None
+    name_que=[]
     while True:
         if pipe_in.poll():
             name = pipe_in.recv()
+            name_que.append(name)
             print(f"Starting {name} UI")
-            uq.assign_name_to_ui(name)
-        elif (
+        if (
             len(uq.current_apps) < NUMBER_OF_RUNNING_UIS
             or (len(uq.current_apps) - uq.used_apps) < BUFFER
         ):
@@ -179,8 +187,13 @@ def _uq_worker(pipe_in, base_url):
                 last_request = uq.generate_unique_UI()
             elif request_check(last_request):
                 last_request = uq.generate_unique_UI()
-        else:
-            time.sleep(0.25)
+        for name in name_que[:]:
+            result = uq.assign_name_to_ui(name)
+            if result:
+                name_que.remove(name)
+                print(f'removed {name}, {name_que}')
+                    
+        time.sleep(0.25)
 
 
 def start_uq_worker(base_url):

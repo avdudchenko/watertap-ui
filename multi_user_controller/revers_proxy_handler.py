@@ -35,7 +35,7 @@ def load_current_port_refs():
 def load_current_lookup_table():
     for i in range(10):
         try:
-            f = open("current_lookup.json")
+            f = open("user_lookup.json")
             return json.load(f)
         except IOError:
             pass
@@ -141,25 +141,27 @@ def start_new_ui_instance():
     username = request.form["username"]
     global uq_pipe
     uq_pipe.send(username)
-    for i in range(10):
-        time.sleep(1)
+    for i in range(60):
+        time.sleep(2)
         lookup = load_current_lookup_table()
 
         user_id_data = lookup.get(username)
-        user_id = user_id_data["user_id"]
-        first_loging = user_id_data["first_login"]
-        print(user_id_data)
-        if first_loging == True:
-            unique_user_message = f"This is your first login, use username: {username}, to re-access the UI!"
-        else:
-            unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI, please return and enter a NEW user name!"
-        if user_id is not None:
+        if user_id_data is not None:
+            user_id = user_id_data["user_id"]
+            first_loging = user_id_data["first_login"]
+            print(user_id_data)
+            if first_loging == True:
+                unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
+            else:
+                unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
+            
             break
 
     return render_template(
         "ui_redirect.html",
         url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
         unique_user_message=unique_user_message,
+        user_link=f"{WWW_SITE_NAME}/{user_id}",
     )  # redirect(f"/watertap_ui/{username}")
 
 
