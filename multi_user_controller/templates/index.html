@@ -1,13 +1,19 @@
 
 <!DOCTYPE html>
 <html>
-<t>Welcome to temporary home of WaterTAP UI webapp for brackishwater workshop </t>
-<p>Please enter a username for which to start up a new UI instance (ensure to use a unique name).</p>
-<p>Data generated in the webapp will be DELETED after 24 hours, its recommended to use the standalone UI.</p>
-<body>
+<body style="background-color: #deebf7">
+<h2>Welcome to temporary home of WaterTAP UI browser app for brackish water workshop!</h2>
+
+<a href='https://sites.google.com/lbl.gov/watertap-ui'>This webapp is equivalent to standalone waterTAP UI you can install on your own machine.</a>
+<p>Note that any data/configuration generated in the webapp will be DELETED after 24 hours, it is recommended to use the standalone UI.</p>
+
 <form action="{{ url_for('start_new_ui_instance') }}" method="post">
-    <label for="username">User name:</label><br>
+    <h3><label for="username">To start the UI in your browser please enter a unique user name, 
+        you can re-access your UI session using this user name:</label><br>
     <input type="text" name="username"><br>
-    <button type="submit">Start UI</button>
+    <button type="submit">Start UI</button></h3>
 </form> 
+</body>
 </html>
+
+

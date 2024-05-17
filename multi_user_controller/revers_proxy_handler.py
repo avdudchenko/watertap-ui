@@ -8,6 +8,7 @@ import json
 from start_unique_ui import start_uq_worker
 import os
 import re
+
 # You must initialize logging, otherwise you'll not see debug output.
 # logging.basicConfig()
 # logging.getLogger().setLevel(logging.DEBUG)
@@ -144,12 +145,20 @@ def start_new_ui_instance():
         time.sleep(1)
         lookup = load_current_lookup_table()
 
-        user_id = lookup.get(username)
+        user_id_data = lookup.get(username)
+        user_id = user_id_data["user_id"]
+        first_loging = user_id_data["first_login"]
+        if first_loging == True:
+            unique_user_message = f"This is your first login, use username: {username}, to re-access the UI!"
+        else:
+            unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI, please return and enter a NEW user name!"
         if user_id is not None:
             break
+
     return render_template(
         "ui_redirect.html",
         url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
+        unique_user_message=unique_user_message,
     )  # redirect(f"/watertap_ui/{username}")
 
 
@@ -158,7 +167,9 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/watertap_ui_backend/<path:path>", methods=["GET", "POST", "OPTIONS", "DELETE"])
+@app.route(
+    "/watertap_ui_backend/<path:path>", methods=["GET", "POST", "OPTIONS", "DELETE"]
+)
 def proxy(path):
     global SITE_NAME
     global PORT_REFERENCE

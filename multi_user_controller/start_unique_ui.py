@@ -98,12 +98,14 @@ class uq_manager:
             for ui_id in self.current_apps:
                 if self.current_apps[ui_id]["user_name"] == "NA":
                     self.current_apps[ui_id]["user_name"] = name
-                    self.current_lookup[name] = ui_id
+                    self.current_lookup[name] = {"user_id": ui_id, "first_login": True}
                     self.used_apps += 1
                     self.update_lookup()
                     self.update_current_uqs()
                     break
         else:
+            self.current_lookup[name]["first_login"] = False
+            self.update_current_uqs()
             print(f"User {name} already exists")
 
     def update_current_uqs(self):
