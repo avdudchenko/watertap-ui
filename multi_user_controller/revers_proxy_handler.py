@@ -148,6 +148,7 @@ def start_new_ui_instance():
         user_id_data = lookup.get(username)
         user_id = user_id_data["user_id"]
         first_loging = user_id_data["first_login"]
+        print(user_id_data)
         if first_loging == True:
             unique_user_message = f"This is your first login, use username: {username}, to re-access the UI!"
         else:
