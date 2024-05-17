@@ -54,8 +54,8 @@ def inplace_change(location, filename, old_string, new_string, modname=None):
         filename = filename + str(modname) + "." + sf
     with open(os.path.join(location, filename), "w") as f:
         print(
-            'Changing "{old_string}" to "{new_string}" in {filename}'.format(**locals())
-        )
+            'Changing "{old_string}" to "{new_string}" in {filename}')
+        
         s = re.sub(old_string, new_string, s)
         f.write(s)
     return filename
@@ -76,14 +76,17 @@ def ui_index(user):
 @app.route("/watertap_ui/<int:user>/<path:path>")
 def ui(user, path):
     print(user, path)
-    if ".js" in path:
-        path = inplace_change(
-            "../electron/ui/build",
-            path,
-            "https://avdsystems.xyz:443/watertap_ui/?(.*?)/",
-            f"https://avdsystems.xyz:443/watertap_ui_backend/{user}/",
-            modname=user,
-        )
+    if ".js" in path and '.js.map' not in path:
+        if user is not None:
+            path = inplace_change(
+                "../electron/ui/build",
+                path,
+                "https://avdsystems.xyz:443/watertap_ui/?(.*?)/",
+                f"https://avdsystems.xyz:443/watertap_ui_backend/{user}/",
+                modname=user,
+            )
+        else:
+            raise ValueError
     print(path)
     result = app.send_static_file(path)
     return result
@@ -91,14 +94,15 @@ def ui(user, path):
 
 def get_port(user, path):
     PORT_REFERENCE = load_current_port_refs()
-    if "flowsheets" in path:
-        path = f'{PORT_REFERENCE[user]["backend_port"]}/{path}'
-        print("updated path", path)
-        return path
-    elif user in PORT_REFERENCE.keys():
-        path = f'{PORT_REFERENCE[user]["frontend_port"]}/{path}'
-        print("updated path", path)
-        return path
+    if user in PORT_REFERENCE.keys():
+        if "flowsheets" in path:
+            path = f'{PORT_REFERENCE[user]["backend_port"]}/{path}'
+            print("updated path", path)
+            return path
+        else:
+            path = f'{PORT_REFERENCE[user]["frontend_port"]}/{path}'
+            print("updated path", path)
+            return path
     else:
         return False
 
@@ -147,7 +151,7 @@ def start_new_ui_instance():
             else:
                 unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
             global ACTIVE_SESSIONS
-            ACTIVE_SESSIONS[user_id] = request.Session()
+            ACTIVE_SESSIONS[user_id] = requests.Session()
             break
 
     return render_template(
@@ -162,7 +166,11 @@ def start_new_ui_instance():
 def index():
     return render_template("index.html")
 
-
+def get_active_session(user):
+    global ACTIVE_SESSIONS
+    if ACTIVE_SESSIONS.get(user) is None:
+        ACTIVE_SESSIONS[user]=requests.Session()
+    return ACTIVE_SESSIONS
 @app.route(
     "/watertap_ui_backend/<string:user>/<path:path>",
     methods=["GET", "POST", "OPTIONS", "DELETE"],
@@ -173,13 +181,12 @@ def proxy(user, path):
     # path = string
     print("original_path", path)
 
-    path = get_port(user)
+    path = get_port(user, path)
     if path != False:
         req_string = request.query_string.decode()
         print("sent_path", f"{SITE_NAME}/watertap_ui_backend/{user}/{path}", req_string)
         print(f"{SITE_NAME}{path}", req_string)  # , request.method)
-        global ACTIVE_SESSIONS
-        ACTIVE_SESSIONS[user] = request.Session()
+        ACTIVE_SESSIONS=get_active_session(user)
         if req_string != "":
             path = f"{path}?{req_string}"
         if request.method == "GET":
@@ -241,6 +248,6 @@ if __name__ == "__main__":
     global uq_pipe
     uq_pipe = start_uq_worker(WWW_SITE_NAME)
 
-    # app.run(debug=False, port=500)
+    # app.run(debug=True, port=500)
 
     serve(app, host="127.0.0.1", port=500)
