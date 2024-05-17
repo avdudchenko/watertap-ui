@@ -105,7 +105,7 @@ class uq_manager:
                     break
         else:
             self.current_lookup[name]["first_login"] = False
-            self.update_current_uqs()
+            self.update_lookup()
             print(f"User {name} already exists")
 
     def update_current_uqs(self):
