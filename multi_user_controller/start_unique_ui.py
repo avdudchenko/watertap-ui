@@ -12,8 +12,8 @@ import requests
 
 global NUMBER_OF_RUNNING_UIS
 global BUFFER
-NUMBER_OF_RUNNING_UIS = 25
-BUFFER = 2
+NUMBER_OF_RUNNING_UIS = 20
+BUFFER = 5
 
 
 class uq_manager:
@@ -113,6 +113,7 @@ class uq_manager:
             print(f"User {name} already exists")
             if self.live_servers.get(name) == None:
                 self.generate_unique_UI(id_nums=self.user_lookup[name]["user_id"])
+                self.used_apps += 1
             self.user_lookup[name]["first_login"] = False
             self.update_lookup()
 
