@@ -19,13 +19,13 @@ BUFFER = 2
 class uq_manager:
     def __init__(self, base_url="http://localhost:500/watertap_ui"):
         self.current_apps = {}
-        self.current_lookup = {}
+        self.user_lookup = {}
+        self.live_servers = {}
         self.current_rcs = {}
         self.front_port = 3000
         self.backend_port = 8000
         self.port_step = 2
         self.cur_unique_ui_id = 10000
-        # self.cur_unique_ui_id += random.randrange(1000, 10000, 1)
         self.base_url = base_url
         self.used_apps = 0
         self.watertap_ui_path = Path(__file__).parent.parent
@@ -87,34 +87,45 @@ class uq_manager:
             return f"http://127.0.0.1:{backend_port}/"
         return None
 
-    def generate_unique_UI(self, id_nums=5):
+    def generate_unique_UI(self, id_nums=None):
         print("Starting uniq ui", str(int(self.cur_unique_ui_id)))
-        result = self.start_unique_ui(ui_id=str(int(self.cur_unique_ui_id)))
-        self.cur_unique_ui_id += 10  # random.randrange(1000, 10000, 1)
+        if id_nums is None:
+            while self.cur_unique_ui_id not in self.current_apps:
+                self.cur_unique_ui_id += 10
+            result = self.start_unique_ui(ui_id=str(int(self.cur_unique_ui_id)))
+        else:
+            result = self.start_unique_ui(ui_id=str(id_nums))
         return result
 
     def assign_name_to_ui(self, name):
-        if self.current_lookup.get(name) is None:
+        if self.user_lookup.get(name) is None:
             for ui_id in self.current_apps:
                 if self.current_apps[ui_id]["user_name"] == "NA":
                     self.current_apps[ui_id]["user_name"] = name
-                    self.current_lookup[name] = {"user_id": ui_id, "first_login": True}
+                    self.user_lookup[name] = {"user_id": ui_id, "first_login": True}
+                    self.live_servers[name] = [ui_id]
                     self.used_apps += 1
                     self.update_lookup()
                     self.update_current_uqs()
                     break
         else:
-            self.current_lookup[name]["first_login"] = False
-            self.update_lookup()
             print(f"User {name} already exists")
+            if self.live_servers.get(name) == None:
+                self.generate_unique_UI(id_nums=self.user_lookup[name]["user_id"])
+            self.user_lookup[name]["first_login"] = False
+            self.update_lookup()
 
     def update_current_uqs(self):
         with open("current_servers.json", "w") as f:
             json.dump(self.current_apps, f)
 
     def update_lookup(self):
-        with open("current_lookup.json", "w") as f:
-            json.dump(self.current_lookup, f)
+        with open("user_lookup.json", "w") as f:
+            json.dump(self.user_lookup, f)
+
+    def load_prior_setting(self):
+        with open("user_lookup.json") as f:
+            self.current_apps = json.load(f)
 
     def update_jsconfig(self, address_base):
         for i in range(10):
@@ -158,7 +169,6 @@ def _uq_worker(pipe_in, base_url):
                 last_request = uq.generate_unique_UI()
             elif request_check(last_request):
                 last_request = uq.generate_unique_UI()
-            # print(last_request)
         else:
             time.sleep(0.25)
 
