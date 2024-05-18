@@ -191,7 +191,7 @@ def proxy(user, path):
             path = f"{path}?{req_string}"
         if request.method == "GET":
             ts = time.time()
-            resp = ACTIVE_SESSIONS[user].get(f"{SITE_NAME}{path}")
+            resp = ACTIVE_SESSIONS[user].get(f"{SITE_NAME}{path}",timeout=None)
             print("get", time.time() - ts)
             ts = time.time()
             excluded_headers = []
