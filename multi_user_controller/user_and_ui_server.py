@@ -34,7 +34,7 @@ def load_current_port_refs():
         except IOError:
             time.sleep(0.5)
             pass
-
+    return {}
 
 def load_current_lookup_table():
     for i in range(10):
@@ -44,6 +44,7 @@ def load_current_lookup_table():
         except IOError:
             time.sleep(0.5)
             pass
+    return {}
 
 
 def inplace_change(location, filename, old_string, new_string, modname=None):
@@ -134,7 +135,7 @@ def send_user_name(name):
     global BACKEND_SERVER
     url = f"{BACKEND_SERVER}/new_user_request"
     payload = name
-    BACKEND_SESSION.post(url, payload)
+    BACKEND_SESSION.post(url, data=payload)
 
 
 @app.route("/start_new_ui_instance", methods=["GET", "POST"])
@@ -143,30 +144,35 @@ def start_new_ui_instance():
     username = request.form["username"]
     global ACTIVE_SESSIONS
     global BACKEND_SESSION
-    BACKEND_SESSION.post(username)
-    for i in range(60):
-        time.sleep(1)
-        lookup = load_current_lookup_table()
-        user_id_data = lookup.get(username)
-        if user_id_data is not None:
-            user_id = user_id_data["user_id"]
-            first_loging = user_id_data["first_login"]
-            print(user_id_data)
-            if first_loging == True:
-                unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
-            else:
-                unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
-            global ACTIVE_SESSIONS
-            ACTIVE_SESSIONS[user_id] = requests.Session()
-            break
+    try:
+        send_user_name(username)
+        got_user=False
+        for i in range(60):
+            time.sleep(1)
+            lookup = load_current_lookup_table()
+            user_id_data = lookup.get(username)
+            if user_id_data is not None:
+                user_id = user_id_data["user_id"]
+                first_loging = user_id_data["first_login"]
+                print(user_id_data)
+                if first_loging == True:
+                    unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
+                else:
+                    unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
+                global ACTIVE_SESSIONS
+                ACTIVE_SESSIONS[user_id] = requests.Session()           
 
-    return render_template(
-        "ui_redirect.html",
-        url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
-        unique_user_message=unique_user_message,
-        user_link=f"{WWW_SITE_NAME}/{user_id}",
-    )  # redirect(f"/watertap_ui/{username}")
-
+                return render_template(
+                    "ui_redirect.html",
+                    url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
+                    unique_user_message=unique_user_message,
+                    user_link=f"{WWW_SITE_NAME}/{user_id}",
+                )  # redirect(f"/watertap_ui/{username}")
+    except requests.exceptions.ConnectionError:
+        pass
+    return render_template('user_creation_failed.html',
+        url_refresh=f"5;URL=https://avdsystems.xyz:443",
+                    user_link=f"https://avdsystems.xyz:443",)
 
 @app.route("/")
 def index():

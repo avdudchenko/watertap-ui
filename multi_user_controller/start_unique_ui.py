@@ -30,6 +30,7 @@ class uq_manager:
         self.cur_unique_ui_id = 10000
         self.base_url = base_url
         self.used_apps = 0
+        self.ui_step=2
         self.watertap_ui_path = Path(__file__).parent.parent
         self._cont = 0
 
@@ -90,7 +91,7 @@ class uq_manager:
             while str(self.cur_unique_ui_id) in str(self.current_apps.keys()) or str(
                 self.cur_unique_ui_id
             ) in str([self.user_lookup[user]["user_id"] for user in self.user_lookup]):
-                self.cur_unique_ui_id += 10
+                self.cur_unique_ui_id += self.ui_step
             print("Starting uniq ui", str(int(self.cur_unique_ui_id)))
             result = self.start_unique_ui(ui_id=str(int(self.cur_unique_ui_id)))
         else:
@@ -193,11 +194,11 @@ def _uq_worker(q, base_url):
     u_time = time.time()
     update_time = 60
     while True:
-        while q.empty() == False():
+        while q.empty() == False:
             try:
                 name = q.get(block=True, timeout=0.25)
                 name_que.append(name)
-                q.task_done()
+                # q.task_done()
                 print(f"Recieved {name} UI")
             except queue.Empty:
                 pass
@@ -249,7 +250,7 @@ def _uq_worker(q, base_url):
 
 
 def start_uq_worker(base_url):
-    q = queue.Queue()
+    q = multiprocessing.Queue()
     p = multiprocessing.Process(target=_uq_worker, args=(q, base_url))
     p.start()
     return q
