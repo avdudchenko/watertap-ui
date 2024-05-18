@@ -71,8 +71,8 @@ class uq_manager:
             }
             rc = subprocess.Popen(
                 "start_ui.bat",
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
+                # stdout=subprocess.DEVNULL,
+                # stderr=subprocess.STDOUT,
             )
             self.current_rcs[str(ui_id)] = rc
             self.update_current_uqs()
@@ -157,13 +157,19 @@ class uq_manager:
 
 
 def request_check(url):
-    try:
-        r = requests.get(url, timeout=1)
-        # print(r.content)
-        r = r.json()
-        return r["message"] == "Hello FastAPI"
-    except requests.exceptions.ConnectTimeout:
-        return False
+    if url is None:
+        return True, url
+    else:
+        try:
+            r = requests.get(url, timeout=1)
+            # print(r.content)
+            r = r.json()
+            if r["message"] == "Hello FastAPI":
+                return True, None
+            else:
+                return False, url
+        except requests.exceptions.ConnectTimeout:
+            return False, url
 
 
 def _uq_worker(pipe_in, base_url):
@@ -180,7 +186,8 @@ def _uq_worker(pipe_in, base_url):
             name = pipe_in.recv()
             name_que.append(name)
             print(f"Starting {name} UI")
-        if last_request is None or request_check(last_request): 
+        last_request_check, last_request=request_check(last_request)
+        if last_request_check: 
             for name in name_que[:]:
                 result, _last_request = uq.assign_name_to_ui(name)
                 if result:
@@ -189,20 +196,20 @@ def _uq_worker(pipe_in, base_url):
                 if _last_request is not None:
                     last_request=_last_request
                     break
+        last_request_check, last_request=request_check(last_request)
         if len(name_que)==0:
             if (
                 len(uq.current_apps) < NUMBER_OF_RUNNING_UIS
                 or (len(uq.current_apps) - uq.used_apps) < BUFFER
             ):  
-                print('starting_uq', last_request,"running_uis", len(uq.current_apps) , NUMBER_OF_RUNNING_UIS, 
+                print('starting_uq', last_request,last_request_check,"running_uis", len(uq.current_apps) , NUMBER_OF_RUNNING_UIS, 
                 "buffer",(len(uq.current_apps) - uq.used_apps) , BUFFER, cur_time)
-                if last_request is None:
-                    last_request = uq.generate_unique_UI()
-                elif request_check(last_request):
+                
+                if last_request_check:
                     last_request = uq.generate_unique_UI()
                 
             if time.time()-u_time>update_time:
-                print(last_request,"running_uis", len(uq.current_apps) , NUMBER_OF_RUNNING_UIS, 
+                print(last_request_check,"running_uis", len(uq.current_apps) , NUMBER_OF_RUNNING_UIS, 
                 "buffer",(len(uq.current_apps) - uq.used_apps) , BUFFER, cur_time)
                 u_time=time.time()
         time.sleep(0.2)
