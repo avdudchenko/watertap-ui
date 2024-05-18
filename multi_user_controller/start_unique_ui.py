@@ -9,6 +9,7 @@ import watertap_ui
 
 from pathlib import Path
 import requests
+import queue
 
 global NUMBER_OF_RUNNING_UIS
 global BUFFER
@@ -30,7 +31,7 @@ class uq_manager:
         self.base_url = base_url
         self.used_apps = 0
         self.watertap_ui_path = Path(__file__).parent.parent
-        self._cont=0
+        self._cont = 0
 
     def start_unique_ui(
         self,
@@ -38,7 +39,7 @@ class uq_manager:
         backend_port=None,
         ui_id="123",
     ):
-        print(ui_id,self.current_rcs.keys(), self._cont)
+        print(ui_id, self.current_rcs.keys(), self._cont)
         if str(ui_id) not in self.current_rcs:
             if front_port is None:
                 front_port = self.front_port + self.port_step
@@ -61,8 +62,8 @@ class uq_manager:
             print(f"start {ui_id}")
             self.update_jsconfig(f"/watertap_ui/{str(ui_id)}")
             backend_location = self.watertap_ui_path / "backend" / "app" / "main.py"
-            self.current_rcs[str(ui_id)] = 'temp'
-            
+            self.current_rcs[str(ui_id)] = "temp"
+
             print("started")
             self.current_apps[str(ui_id)] = {
                 "frontend_port": str(front_port),
@@ -77,17 +78,18 @@ class uq_manager:
             self.current_rcs[str(ui_id)] = rc
             self.update_current_uqs()
             # time.sleep(8)
-            print('Started new ui test on ', f"http://127.0.0.1:{backend_port}/")
+            print("Started new ui test on ", f"http://127.0.0.1:{backend_port}/")
             return f"http://127.0.0.1:{backend_port}/"
         else:
             return f"http://127.0.0.1:{self.current_apps[str(ui_id)]['backend_port']}/"
 
     def generate_unique_UI(self, id_nums=None):
-        
+
         if id_nums is None:
-            print('auto start up')
-            while (str(self.cur_unique_ui_id) in str(self.current_apps.keys()) 
-            or str(self.cur_unique_ui_id) in str([self.user_lookup[user]['user_id'] for user in self.user_lookup])):
+            print("auto start up")
+            while str(self.cur_unique_ui_id) in str(self.current_apps.keys()) or str(
+                self.cur_unique_ui_id
+            ) in str([self.user_lookup[user]["user_id"] for user in self.user_lookup]):
                 self.cur_unique_ui_id += 10
             print("Starting uniq ui", str(int(self.cur_unique_ui_id)))
             result = self.start_unique_ui(ui_id=str(int(self.cur_unique_ui_id)))
@@ -97,8 +99,8 @@ class uq_manager:
         return result
 
     def assign_name_to_ui(self, name):
-        assigned=False
-        last_request=None
+        assigned = False
+        last_request = None
         if self.user_lookup.get(name) is None:
             for ui_id in self.current_apps:
                 if self.current_apps[str(ui_id)]["user_name"] == "NA":
@@ -116,11 +118,13 @@ class uq_manager:
         else:
             print(f"User {name} already exists")
             if self.current_apps.get(self.user_lookup[name]["user_id"]) == None:
-                print(f'FORCING STARTUP!')
-                last_request=self.generate_unique_UI(id_nums=self.user_lookup[name]["user_id"])
+                print(f"FORCING STARTUP!")
+                last_request = self.generate_unique_UI(
+                    id_nums=self.user_lookup[name]["user_id"]
+                )
                 self.used_apps += 1
             else:
-                self.current_apps[self.user_lookup[name]["user_id"]]['user_name']=name
+                self.current_apps[self.user_lookup[name]["user_id"]]["user_name"] = name
             self.user_lookup[name]["first_login"] = False
 
             self.update_lookup()
@@ -139,6 +143,13 @@ class uq_manager:
         try:
             with open("user_lookup.json") as f:
                 self.user_lookup = json.load(f)
+        except FileNotFoundError:
+            pass
+
+    def load_servers(self):
+        try:
+            with open("current_servers.json") as f:
+                self.current_apps = json.load(f)
         except FileNotFoundError:
             pass
 
@@ -172,54 +183,76 @@ def request_check(url):
             return False, url
 
 
-def _uq_worker(pipe_in, base_url):
+def _uq_worker(q, base_url):
     uq = uq_manager(base_url)
     global NUMBER_OF_RUNNING_UIS
     global BUFFER
     last_request = None
-    name_que=[]
-    cur_time=time.time()
-    u_time=time.time()
-    update_time=60
+    name_que = []
+    cur_time = time.time()
+    u_time = time.time()
+    update_time = 60
     while True:
-        if pipe_in.poll():
-            name = pipe_in.recv()
-            name_que.append(name)
-            print(f"Starting {name} UI")
-        last_request_check, last_request=request_check(last_request)
-        if last_request_check: 
+        while q.empty() == False():
+            try:
+                name = q.get(block=True, timeout=0.25)
+                name_que.append(name)
+                q.task_done()
+                print(f"Recieved {name} UI")
+            except queue.Empty:
+                pass
+        last_request_check, last_request = request_check(last_request)
+        if last_request_check:
             for name in name_que[:]:
                 result, _last_request = uq.assign_name_to_ui(name)
                 if result:
                     name_que.remove(name)
-                    print(f'removed {name}, {name_que}')
+                    print(f"removed {name}, {name_que}")
                 if _last_request is not None:
-                    last_request=_last_request
+                    last_request = _last_request
                     break
-        last_request_check, last_request=request_check(last_request)
-        if len(name_que)==0:
+        last_request_check, last_request = request_check(last_request)
+        if len(name_que) == 0:
             if (
                 len(uq.current_apps) < NUMBER_OF_RUNNING_UIS
                 or (len(uq.current_apps) - uq.used_apps) < BUFFER
-            ):  
-                print('starting_uq', last_request,last_request_check,"running_uis", len(uq.current_apps) , NUMBER_OF_RUNNING_UIS, 
-                "buffer",(len(uq.current_apps) - uq.used_apps) , BUFFER, cur_time)
-                
+            ):
+                print(
+                    "starting_uq",
+                    last_request,
+                    last_request_check,
+                    "running_uis",
+                    len(uq.current_apps),
+                    NUMBER_OF_RUNNING_UIS,
+                    "buffer",
+                    (len(uq.current_apps) - uq.used_apps),
+                    BUFFER,
+                    cur_time,
+                )
+
                 if last_request_check:
                     last_request = uq.generate_unique_UI()
-                
-            if time.time()-u_time>update_time:
-                print(last_request_check,"running_uis", len(uq.current_apps) , NUMBER_OF_RUNNING_UIS, 
-                "buffer",(len(uq.current_apps) - uq.used_apps) , BUFFER, cur_time)
-                u_time=time.time()
+
+            if time.time() - u_time > update_time:
+                print(
+                    last_request_check,
+                    "running_uis",
+                    len(uq.current_apps),
+                    NUMBER_OF_RUNNING_UIS,
+                    "buffer",
+                    (len(uq.current_apps) - uq.used_apps),
+                    BUFFER,
+                    cur_time,
+                )
+                u_time = time.time()
         time.sleep(0.2)
 
 
 def start_uq_worker(base_url):
-    request_in, request_out = Pipe()
-    p = multiprocessing.Process(target=_uq_worker, args=(request_out, base_url))
+    q = queue.Queue()
+    p = multiprocessing.Process(target=_uq_worker, args=(q, base_url))
     p.start()
-    return request_in
+    return q
 
 
 if __name__ == "__main__":

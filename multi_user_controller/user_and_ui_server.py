@@ -21,8 +21,9 @@ app = Flask(__name__, static_folder="../electron/ui/build", static_url_path="/")
 
 SITE_NAME = "http://127.0.0.1:"
 WWW_SITE_NAME = "https://avdsystems.xyz:443/watertap_ui"
-
+BACKEND_SERVER = "http://127.0.0.1:501"
 ACTIVE_SESSIONS = {}
+BACKEND_SESSION = requests.session()
 
 
 def load_current_port_refs():
@@ -53,9 +54,8 @@ def inplace_change(location, filename, old_string, new_string, modname=None):
         filename.replace("." + sf, "")
         filename = filename + str(modname) + "." + sf
     with open(os.path.join(location, filename), "w") as f:
-        print(
-            'Changing "{old_string}" to "{new_string}" in {filename}')
-        
+        print('Changing "{old_string}" to "{new_string}" in {filename}')
+
         s = re.sub(old_string, new_string, s)
         f.write(s)
     return filename
@@ -76,7 +76,7 @@ def ui_index(user):
 @app.route("/watertap_ui/<int:user>/<path:path>")
 def ui(user, path):
     print(user, path)
-    if ".js" in path and '.js.map' not in path:
+    if ".js" in path and ".js.map" not in path:
         if user is not None:
             path = inplace_change(
                 "../electron/ui/build",
@@ -129,6 +129,12 @@ def get_port(user, path):
 #     headers.append(cors_header)
 #     response = Response(resp.content, resp.status_code, headers)
 #     return response
+def send_user_name(name):
+    global BACKEND_SESSION
+    global BACKEND_SERVER
+    url = f"{BACKEND_SERVER}/new_user_request"
+    payload = name
+    BACKEND_SESSION.post(url, url)
 
 
 @app.route("/start_new_ui_instance", methods=["GET", "POST"])
@@ -137,7 +143,8 @@ def start_new_ui_instance():
     username = request.form["username"]
     global uq_pipe
     global ACTIVE_SESSIONS
-    uq_pipe.send(username)
+    global BACKEND_SESSION
+    BACKEND_SESSION.post(username)
     for i in range(60):
         time.sleep(1)
         lookup = load_current_lookup_table()
@@ -166,11 +173,14 @@ def start_new_ui_instance():
 def index():
     return render_template("index.html")
 
+
 def get_active_session(user):
     global ACTIVE_SESSIONS
     if ACTIVE_SESSIONS.get(user) is None:
-        ACTIVE_SESSIONS[user]=requests.Session()
+        ACTIVE_SESSIONS[user] = requests.Session()
     return ACTIVE_SESSIONS
+
+
 @app.route(
     "/watertap_ui_backend/<string:user>/<path:path>",
     methods=["GET", "POST", "OPTIONS", "DELETE"],
@@ -186,12 +196,12 @@ def proxy(user, path):
         req_string = request.query_string.decode()
         print("sent_path", f"{SITE_NAME}/watertap_ui_backend/{user}/{path}", req_string)
         print(f"{SITE_NAME}{path}", req_string)  # , request.method)
-        ACTIVE_SESSIONS=get_active_session(user)
+        ACTIVE_SESSIONS = get_active_session(user)
         if req_string != "":
             path = f"{path}?{req_string}"
         if request.method == "GET":
             ts = time.time()
-            resp = ACTIVE_SESSIONS[user].get(f"{SITE_NAME}{path}",timeout=None)
+            resp = ACTIVE_SESSIONS[user].get(f"{SITE_NAME}{path}", timeout=None)
             print("get", time.time() - ts)
             ts = time.time()
             excluded_headers = []
@@ -247,7 +257,5 @@ def proxy(user, path):
 if __name__ == "__main__":
     global uq_pipe
     uq_pipe = start_uq_worker(WWW_SITE_NAME)
-
-    # app.run(debug=True, port=500)
 
     serve(app, host="127.0.0.1", port=500)
