@@ -134,14 +134,13 @@ def send_user_name(name):
     global BACKEND_SERVER
     url = f"{BACKEND_SERVER}/new_user_request"
     payload = name
-    BACKEND_SESSION.post(url, url)
+    BACKEND_SESSION.post(url, payload)
 
 
 @app.route("/start_new_ui_instance", methods=["GET", "POST"])
 def start_new_ui_instance():
     print(request)
     username = request.form["username"]
-    global uq_pipe
     global ACTIVE_SESSIONS
     global BACKEND_SESSION
     BACKEND_SESSION.post(username)
@@ -255,7 +254,5 @@ def proxy(user, path):
 
 
 if __name__ == "__main__":
-    global uq_pipe
-    uq_pipe = start_uq_worker(WWW_SITE_NAME)
 
     serve(app, host="127.0.0.1", port=500)
