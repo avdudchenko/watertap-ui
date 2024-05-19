@@ -123,7 +123,10 @@ class uq_manager:
                 last_request = self.generate_unique_UI(
                     id_nums=self.user_lookup[name]["user_id"]
                 )
+                self.current_apps[self.user_lookup[name]["user_id"]]["user_name"] = name
                 self.used_apps += 1
+                self.update_lookup()
+                self.update_current_uqs()
             else:
                 self.current_apps[self.user_lookup[name]["user_id"]]["user_name"] = name
             self.user_lookup[name]["first_login"] = False
@@ -235,8 +238,7 @@ def _uq_worker(q, base_url):
                     last_request = uq.generate_unique_UI()
 
             if time.time() - u_time > update_time:
-                print(
-                    last_request_check,
+                print("current users",uq.used_apps,
                     "running_uis",
                     len(uq.current_apps),
                     NUMBER_OF_RUNNING_UIS,
