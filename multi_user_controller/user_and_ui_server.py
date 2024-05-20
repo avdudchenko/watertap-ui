@@ -261,4 +261,4 @@ def proxy(user, path):
 
 if __name__ == "__main__":
 
-    serve(app, host="127.0.0.1", port=500)
+    serve(app, host="127.0.0.1", port=500, threads=7)
