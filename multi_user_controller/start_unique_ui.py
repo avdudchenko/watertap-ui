@@ -26,7 +26,7 @@ class uq_manager:
         self.live_servers = {}
         self.current_rcs = {}
         self.load_prior_setting()
-        self.current_backends = self.load_backends()
+        self.load_backends()
         self.front_port = 3000
         self.backend_port = 8000
         self.port_step = 2
@@ -76,7 +76,7 @@ class uq_manager:
                 "backend_port": str(backend_port),
                 "user_name": "NA",
             }
-            update_entry_points(backend_file)
+            update_entry_points("entery_point_managment/"+backend_file)
             rc = subprocess.Popen(
                 "start_ui.bat",
                 # stdout=subprocess.DEVNULL,
@@ -98,34 +98,48 @@ class uq_manager:
                 self.cur_unique_ui_id
             ) in str([self.user_lookup[user]["user_id"] for user in self.user_lookup]):
                 self.cur_unique_ui_id += self.ui_step
-            print("Starting uniq ui", str(int(self.cur_unique_ui_id)))
+            print("Starting uniq ui", str(self.cur_unique_ui_id))
             result = self.start_unique_ui(
-                ui_id=str(int(self.cur_unique_ui_id)), backend_file=backend_file
+                ui_id=str(self.cur_unique_ui_id), backend_file=backend_file
             )
         else:
-            print("Starting provided ui", str(int(id_nums)))
+            print("Starting provided ui", str(id_nums))
             result = self.start_unique_ui(ui_id=str(id_nums), backend_file=backend_file)
         return result
 
     def assign_name_to_ui(self, name, backend):
         assigned = False
         last_request = None
-        self.current_backends = self.load_backends()
-        user_backend = self.current_backends[backend]
+        self.load_backends()
+        print(self.current_backends)
+        user_backend = self.current_backends.get(backend)
         if self.user_lookup.get(name) is None:
             for ui_id in self.current_apps:
                 if self.current_apps[str(ui_id)]["user_name"] == "NA":
                     self.current_apps[str(ui_id)]["user_name"] = name
-                    self.user_lookup[name] = {
-                        "user_id": str(ui_id),
+                    self.user_lookup[ui_id] = {
+                        "user_id": str(name),
                         "first_login": True,
                     }
-                    self.live_servers[name] = [str(ui_id)]
+                    self.live_servers[ui_id] = [str(name)]
                     self.used_apps += 1
                     self.update_lookup()
                     self.update_current_uqs()
                     return True, last_request
-
+            print(f"FORCING STARTUP!")
+            
+            last_request = self.generate_unique_UI(
+                id_nums=name, backend_file=user_backend
+            )
+            self.current_apps[str(name)]["user_name"] = name
+            self.user_lookup[name] = {
+                        "user_id": str(name),
+                        "first_login": True,
+                    }
+            self.used_apps += 1
+            self.update_lookup()
+            self.update_current_uqs()
+            return True, last_request
         else:
             print(f"User {name} already exists")
             if self.current_apps.get(self.user_lookup[name]["user_id"]) == None:
@@ -170,8 +184,9 @@ class uq_manager:
     def load_backends(self):
         try:
             with open("server_configs/accepted_users.json") as f:
-                self.current_apps = json.load(f)
+                self.current_backends = json.load(f)
         except FileNotFoundError:
+            print('could not load users')
             pass
 
     def update_jsconfig(self, address_base):
@@ -219,7 +234,7 @@ def _uq_worker(q, base_url):
                 user_data = q.get(block=True, timeout=0.25)
                 name_que.append(user_data)
                 # q.task_done()
-                print(f"Recieved {name} UI")
+                print(f"Recieved {user_data} UI")
             except queue.Empty:
                 pass
         last_request_check, last_request = request_check(last_request)

@@ -150,3 +150,5 @@ extensions/
 setup-extensions-dist/
 sweep_outputs/
 multi_user_controller/server_configs/accepted_users.json
+multi_user_controller/server_configs/user_lookup.json
+multi_user_controller/server_configs/current_servers.json

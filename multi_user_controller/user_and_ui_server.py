@@ -75,7 +75,7 @@ def inplace_change(location, filename, old_string, new_string, modname=None):
     return filename
 
 
-@app.route("/watertap_ui/<int:user>")
+@app.route("/watertap_ui/<string:user>")
 def ui_index(user):
     path = inplace_change(
         "../electron/ui/build",
@@ -87,7 +87,7 @@ def ui_index(user):
     return app.send_static_file(path)
 
 
-@app.route("/watertap_ui/<int:user>/<path:path>")
+@app.route("/watertap_ui/<string:user>/<path:path>")
 def ui(user, path):
     print(user, path)
     if ".js" in path and ".js.map" not in path:
@@ -138,9 +138,9 @@ def encode(string_value):
 @app.route("/start_new_ui_instance", methods=["GET", "POST"])
 def start_new_ui_instance():
     print(request)
-    username = request.form["username"]
+    username_req = request.form["username"]
     pwd = request.form["pwd"]
-    username = encode(f"{username}:{pwd}")
+    username = encode(f"{username_req}:{pwd}")
     backend = encode(f"{pwd}")
     print("Got backend request", backend)
     lookup = load_accepted_users()
@@ -159,9 +159,9 @@ def start_new_ui_instance():
                     first_loging = user_id_data["first_login"]
                     print(user_id_data)
                     if first_loging == True:
-                        unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
+                        unique_user_message = f"This is your first login, use username: {username_req}, to re-access saved flowsheet configurations!"
                     else:
-                        unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
+                        unique_user_message = f"Thank you for returning {username_req}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
                     global ACTIVE_SESSIONS
                     ACTIVE_SESSIONS[user_id] = requests.Session()
 
