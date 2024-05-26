@@ -182,7 +182,7 @@ def start_new_ui_instance():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("login_page.html")
 
 
 def get_active_session(user):
