@@ -111,7 +111,7 @@ class uq_manager:
         last_request = None
         self.load_backends()
         print(self.current_backends)
-        user_backend = self.current_backends.get(backend)['backend_file']
+        user_backend = self.current_backends.get(backend)["backend_file"]
         if self.user_lookup.get(name) is None:
             for ui_id in self.current_apps:
                 if self.current_apps[str(ui_id)]["user_name"] == "NA":
@@ -249,7 +249,7 @@ def _uq_worker(q, base_url):
                     break
         last_request_check, last_request = request_check(last_request)
         if len(name_que) == 0:
-            if (
+            if BUFFER > 0 and (
                 len(uq.current_apps) < NUMBER_OF_RUNNING_UIS
                 or (len(uq.current_apps) - uq.used_apps) < BUFFER
             ):
