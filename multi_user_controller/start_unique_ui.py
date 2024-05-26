@@ -127,7 +127,7 @@ class uq_manager:
             print(f"FORCING STARTUP!")
 
             last_request = self.generate_unique_UI(
-                id_nums=name, backend_file=user_backend
+                id_nums=ui_id, backend_file=user_backend
             )
             self.current_apps[str(ui_id)]["user_name"] = name
             self.user_lookup[name] = {
