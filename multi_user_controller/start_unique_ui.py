@@ -13,8 +13,10 @@ import queue
 
 global NUMBER_OF_RUNNING_UIS
 global BUFFER
-NUMBER_OF_RUNNING_UIS = 15
-BUFFER = 5
+from entery_point_managment.update_entry_points import update_entry_points
+
+NUMBER_OF_RUNNING_UIS = 0
+BUFFER = 0
 
 
 class uq_manager:
@@ -24,13 +26,14 @@ class uq_manager:
         self.live_servers = {}
         self.current_rcs = {}
         self.load_prior_setting()
+        self.current_backends = self.load_backends()
         self.front_port = 3000
         self.backend_port = 8000
         self.port_step = 2
         self.cur_unique_ui_id = 10000
         self.base_url = base_url
         self.used_apps = 0
-        self.ui_step=2
+        self.ui_step = 2
         self.watertap_ui_path = Path(__file__).parent.parent
         self._cont = 0
 
@@ -39,7 +42,9 @@ class uq_manager:
         front_port=None,
         backend_port=None,
         ui_id="123",
+        backend_file="start_ui.bat",
     ):
+        self.current_backends = self.load_backends()
         print(ui_id, self.current_rcs.keys(), self._cont)
         if str(ui_id) not in self.current_rcs:
             if front_port is None:
@@ -71,6 +76,7 @@ class uq_manager:
                 "backend_port": str(backend_port),
                 "user_name": "NA",
             }
+            update_entry_points(backend_file)
             rc = subprocess.Popen(
                 "start_ui.bat",
                 # stdout=subprocess.DEVNULL,
@@ -84,7 +90,7 @@ class uq_manager:
         else:
             return f"http://127.0.0.1:{self.current_apps[str(ui_id)]['backend_port']}/"
 
-    def generate_unique_UI(self, id_nums=None):
+    def generate_unique_UI(self, id_nums=None, backend_file="start_ui.bat"):
 
         if id_nums is None:
             print("auto start up")
@@ -93,15 +99,19 @@ class uq_manager:
             ) in str([self.user_lookup[user]["user_id"] for user in self.user_lookup]):
                 self.cur_unique_ui_id += self.ui_step
             print("Starting uniq ui", str(int(self.cur_unique_ui_id)))
-            result = self.start_unique_ui(ui_id=str(int(self.cur_unique_ui_id)))
+            result = self.start_unique_ui(
+                ui_id=str(int(self.cur_unique_ui_id)), backend_file=backend_file
+            )
         else:
             print("Starting provided ui", str(int(id_nums)))
-            result = self.start_unique_ui(ui_id=str(id_nums))
+            result = self.start_unique_ui(ui_id=str(id_nums), backend_file=backend_file)
         return result
 
-    def assign_name_to_ui(self, name):
+    def assign_name_to_ui(self, name, backend):
         assigned = False
         last_request = None
+        self.current_backends = self.load_backends()
+        user_backend = self.current_backends[backend]
         if self.user_lookup.get(name) is None:
             for ui_id in self.current_apps:
                 if self.current_apps[str(ui_id)]["user_name"] == "NA":
@@ -121,7 +131,7 @@ class uq_manager:
             if self.current_apps.get(self.user_lookup[name]["user_id"]) == None:
                 print(f"FORCING STARTUP!")
                 last_request = self.generate_unique_UI(
-                    id_nums=self.user_lookup[name]["user_id"]
+                    id_nums=self.user_lookup[name]["user_id"], backend_file=user_backend
                 )
                 self.current_apps[self.user_lookup[name]["user_id"]]["user_name"] = name
                 self.used_apps += 1
@@ -136,23 +146,30 @@ class uq_manager:
         return assigned, last_request
 
     def update_current_uqs(self):
-        with open("current_servers.json", "w") as f:
+        with open("server_configs/current_servers.json", "w") as f:
             json.dump(self.current_apps, f)
 
     def update_lookup(self):
-        with open("user_lookup.json", "w") as f:
+        with open("server_configs/user_lookup.json", "w") as f:
             json.dump(self.user_lookup, f)
 
     def load_prior_setting(self):
         try:
-            with open("user_lookup.json") as f:
+            with open("server_configs/user_lookup.json") as f:
                 self.user_lookup = json.load(f)
         except FileNotFoundError:
             pass
 
     def load_servers(self):
         try:
-            with open("current_servers.json") as f:
+            with open("server_configs/current_servers.json") as f:
+                self.current_apps = json.load(f)
+        except FileNotFoundError:
+            pass
+
+    def load_backends(self):
+        try:
+            with open("server_configs/accepted_users.json") as f:
                 self.current_apps = json.load(f)
         except FileNotFoundError:
             pass
@@ -238,7 +255,9 @@ def _uq_worker(q, base_url):
                     last_request = uq.generate_unique_UI()
 
             if time.time() - u_time > update_time:
-                print("current users",uq.used_apps,
+                print(
+                    "current users",
+                    uq.used_apps,
                     "running_uis",
                     len(uq.current_apps),
                     NUMBER_OF_RUNNING_UIS,
@@ -248,6 +267,7 @@ def _uq_worker(q, base_url):
                     cur_time,
                 )
                 u_time = time.time()
+
         time.sleep(0.2)
 
 

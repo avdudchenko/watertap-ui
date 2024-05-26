@@ -29,7 +29,7 @@ ACTIVE_SESSIONS = {}
 def start_new_user():
     global uq_pipe
     new_user = request.get_data().decode()
-    print('new_user_request got', new_user)
+    print("new_user_request got", new_user)
     uq_pipe.put(new_user)
     return f"{new_user} added!"
 

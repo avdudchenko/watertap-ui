@@ -8,6 +8,7 @@ import json
 from start_unique_ui import start_uq_worker
 import os
 import re
+import hashlib
 
 # You must initialize logging, otherwise you'll not see debug output.
 # logging.basicConfig()
@@ -29,17 +30,29 @@ BACKEND_SESSION = requests.session()
 def load_current_port_refs():
     for i in range(10):
         try:
-            f = open("current_servers.json")
+            f = open("server_configs/current_servers.json")
             return json.load(f)
         except IOError:
             time.sleep(0.5)
             pass
     return {}
 
+
 def load_current_lookup_table():
     for i in range(10):
         try:
-            f = open("user_lookup.json")
+            f = open("server_configs/user_lookup.json")
+            return json.load(f)
+        except IOError:
+            time.sleep(0.5)
+            pass
+    return {}
+
+
+def load_accepted_users():
+    for i in range(10):
+        try:
+            f = open("server_configs/accepted_users.json")
             return json.load(f)
         except IOError:
             time.sleep(0.5)
@@ -108,33 +121,11 @@ def get_port(user, path):
         return False
 
 
-# @app.route("/watertap_ui/<string:user>/static/js/bundle.js", methods=["GET", "POST"])
-# def manual_load(user):
-#     PORT_REFERENCE = load_current_port_refs()
-#     resp = requests.get(
-#         f"{SITE_NAME}{PORT_REFERENCE[user]['frontend_port']}/watertap_ui/{user}/static/js/bundle.js"
-#     )
-#     cors_header = ("Access-Control-Allow-Origin", "*")
-#     excluded_headers = [
-#         "content-encoding",
-#         # "content-length",
-#         "transfer-encoding",
-#         # "content-type",
-#         # "connection",
-#     ]
-#     headers = [
-#         (name, value)
-#         for (name, value) in resp.raw.headers.items()
-#         if name.lower() not in excluded_headers
-#     ]
-#     headers.append(cors_header)
-#     response = Response(resp.content, resp.status_code, headers)
-#     return response
-def send_user_name(name):
+def send_user_name(name, backend):
     global BACKEND_SESSION
     global BACKEND_SERVER
     url = f"{BACKEND_SERVER}/new_user_request"
-    payload = name
+    payload = {"username": name, "backend": backend}
     BACKEND_SESSION.post(url, data=payload)
 
 
@@ -142,37 +133,52 @@ def send_user_name(name):
 def start_new_ui_instance():
     print(request)
     username = request.form["username"]
-    global ACTIVE_SESSIONS
-    global BACKEND_SESSION
-    try:
-        send_user_name(username)
-        got_user=False
-        for i in range(60):
-            time.sleep(1)
-            lookup = load_current_lookup_table()
-            user_id_data = lookup.get(username)
-            if user_id_data is not None:
-                user_id = user_id_data["user_id"]
-                first_loging = user_id_data["first_login"]
-                print(user_id_data)
-                if first_loging == True:
-                    unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
-                else:
-                    unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
-                global ACTIVE_SESSIONS
-                ACTIVE_SESSIONS[user_id] = requests.Session()           
+    pwd = request.form["pwd"]
+    username = hashlib.new("sha256").update(f"{username}:{pwd}".encode()).digest()
+    backend = hashlib.new("sha256").update(f"{pwd}".encode()).digest()
+    lookup = load_accepted_users()
+    if backend in lookup.keys():
+        global ACTIVE_SESSIONS
+        global BACKEND_SESSION
+        try:
+            send_user_name(username, backend)
+            got_user = False
+            for i in range(60):
+                time.sleep(1)
+                lookup = load_current_lookup_table()
+                user_id_data = lookup.get(username)
+                if user_id_data is not None:
+                    user_id = user_id_data["user_id"]
+                    first_loging = user_id_data["first_login"]
+                    print(user_id_data)
+                    if first_loging == True:
+                        unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
+                    else:
+                        unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
+                    global ACTIVE_SESSIONS
+                    ACTIVE_SESSIONS[user_id] = requests.Session()
 
-                return render_template(
-                    "ui_redirect.html",
-                    url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
-                    unique_user_message=unique_user_message,
-                    user_link=f"{WWW_SITE_NAME}/{user_id}",
-                )  # redirect(f"/watertap_ui/{username}")
-    except requests.exceptions.ConnectionError:
-        pass
-    return render_template('user_creation_failed.html',
-        url_refresh=f"5;URL=https://avdsystems.xyz:443",
-                    user_link=f"https://avdsystems.xyz:443",)
+                    return render_template(
+                        "ui_redirect.html",
+                        url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
+                        unique_user_message=unique_user_message,
+                        user_link=f"{WWW_SITE_NAME}/{user_id}",
+                    )  # redirect(f"/watertap_ui/{username}")
+        except requests.exceptions.ConnectionError:
+            pass
+
+        return render_template(
+            "user_creation_failed.html",
+            url_refresh=f"5;URL=https://avdsystems.xyz:443",
+            user_link=f"https://avdsystems.xyz:443",
+        )
+    else:
+        return render_template(
+            "failed_login.html",
+            url_refresh=f"2;URL=https://avdsystems.xyz:443",
+            user_link=f"https://avdsystems.xyz:443",
+        )
+
 
 @app.route("/")
 def index():

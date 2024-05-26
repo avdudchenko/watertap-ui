@@ -149,3 +149,4 @@ cert/
 extensions/
 setup-extensions-dist/
 sweep_outputs/
+multi_user_controller/server_configs/accepted_users.json
