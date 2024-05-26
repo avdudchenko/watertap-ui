@@ -121,11 +121,11 @@ def get_port(user, path):
         return False
 
 
-def send_user_name(name, backend):
+def send_user_name(name, userid, backend):
     global BACKEND_SESSION
     global BACKEND_SERVER
     url = f"{BACKEND_SERVER}/new_user_request"
-    payload = {"username": name, "backend": backend}
+    payload = {"username": name, "id": userid, "backend": backend}
     BACKEND_SESSION.post(url, json=payload)
 
 
@@ -138,9 +138,9 @@ def encode(string_value):
 @app.route("/start_new_ui_instance", methods=["GET", "POST"])
 def start_new_ui_instance():
     print(request)
-    username_req = request.form["username"]
+    username = request.form["username"]
     pwd = request.form["pwd"]
-    username = encode(f"{username_req}:{pwd}")
+    username_id = encode(f"{username}:{pwd}")
     backend = encode(f"{pwd}")
     print("Got backend request", backend)
     lookup = load_accepted_users()
@@ -148,7 +148,7 @@ def start_new_ui_instance():
         global ACTIVE_SESSIONS
         global BACKEND_SESSION
         try:
-            send_user_name(username, backend)
+            send_user_name(username, username_id, backend)
             got_user = False
             for i in range(60):
                 time.sleep(1)
@@ -156,12 +156,12 @@ def start_new_ui_instance():
                 user_id_data = lookup.get(username)
                 if user_id_data is not None:
                     user_id = user_id_data["user_id"]
-                    first_loging = user_id_data["first_login"]
+                    first_login = user_id_data["first_login"]
                     print(user_id_data)
-                    if first_loging == True:
-                        unique_user_message = f"This is your first login, use username: {username_req}, to re-access saved flowsheet configurations!"
+                    if first_login == True:
+                        unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
                     else:
-                        unique_user_message = f"Thank you for returning {username_req}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
+                        unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
                     global ACTIVE_SESSIONS
                     ACTIVE_SESSIONS[user_id] = requests.Session()
 

@@ -23,7 +23,6 @@ class uq_manager:
     def __init__(self, base_url="http://localhost:500/watertap_ui"):
         self.current_apps = {}
         self.user_lookup = {}
-        self.live_servers = {}
         self.current_rcs = {}
         self.load_prior_setting()
         self.load_backends()
@@ -76,7 +75,7 @@ class uq_manager:
                 "backend_port": str(backend_port),
                 "user_name": "NA",
             }
-            update_entry_points("entery_point_managment/"+backend_file)
+            update_entry_points("entery_point_managment/" + backend_file)
             rc = subprocess.Popen(
                 "start_ui.bat",
                 # stdout=subprocess.DEVNULL,
@@ -107,7 +106,7 @@ class uq_manager:
             result = self.start_unique_ui(ui_id=str(id_nums), backend_file=backend_file)
         return result
 
-    def assign_name_to_ui(self, name, backend):
+    def assign_name_to_ui(self, name, ui_id, backend):
         assigned = False
         last_request = None
         self.load_backends()
@@ -121,21 +120,20 @@ class uq_manager:
                         "user_id": str(name),
                         "first_login": True,
                     }
-                    self.live_servers[ui_id] = [str(name)]
                     self.used_apps += 1
                     self.update_lookup()
                     self.update_current_uqs()
                     return True, last_request
             print(f"FORCING STARTUP!")
-            
+
             last_request = self.generate_unique_UI(
                 id_nums=name, backend_file=user_backend
             )
-            self.current_apps[str(name)]["user_name"] = name
+            self.current_apps[str(ui_id)]["user_name"] = name
             self.user_lookup[name] = {
-                        "user_id": str(name),
-                        "first_login": True,
-                    }
+                "user_id": str(ui_id),
+                "first_login": True,
+            }
             self.used_apps += 1
             self.update_lookup()
             self.update_current_uqs()
@@ -186,7 +184,7 @@ class uq_manager:
             with open("server_configs/accepted_users.json") as f:
                 self.current_backends = json.load(f)
         except FileNotFoundError:
-            print('could not load users')
+            print("could not load users")
             pass
 
     def update_jsconfig(self, address_base):
@@ -241,7 +239,7 @@ def _uq_worker(q, base_url):
         if last_request_check:
             for name in name_que[:]:
                 result, _last_request = uq.assign_name_to_ui(
-                    name["username"], name["backend"]
+                    name["username"], name["id"], name["backend"]
                 )
                 if result:
                     name_que.remove(name)
