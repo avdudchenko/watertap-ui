@@ -126,7 +126,13 @@ def send_user_name(name, backend):
     global BACKEND_SERVER
     url = f"{BACKEND_SERVER}/new_user_request"
     payload = {"username": name, "backend": backend}
-    BACKEND_SESSION.post(url, data=payload)
+    BACKEND_SESSION.post(url, json=payload)
+
+
+def encode(string_value):
+    h = hashlib.new("sha256")
+    h.update(string_value.encode())
+    return str(h.hexdigest())
 
 
 @app.route("/start_new_ui_instance", methods=["GET", "POST"])
@@ -134,8 +140,9 @@ def start_new_ui_instance():
     print(request)
     username = request.form["username"]
     pwd = request.form["pwd"]
-    username = hashlib.new("sha256").update(f"{username}:{pwd}".encode()).digest()
-    backend = hashlib.new("sha256").update(f"{pwd}".encode()).digest()
+    username = encode(f"{username}:{pwd}")
+    backend = encode(f"{pwd}")
+    print("Got backend request", backend)
     lookup = load_accepted_users()
     if backend in lookup.keys():
         global ACTIVE_SESSIONS

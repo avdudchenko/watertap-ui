@@ -28,7 +28,7 @@ ACTIVE_SESSIONS = {}
 @app.route("/new_user_request", methods=["POST"])
 def start_new_user():
     global uq_pipe
-    new_user = request.get_data().decode()
+    new_user = request.get_json()
     print("new_user_request got", new_user)
     uq_pipe.put(new_user)
     return f"{new_user} added!"
