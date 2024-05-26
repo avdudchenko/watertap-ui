@@ -216,8 +216,8 @@ def _uq_worker(q, base_url):
     while True:
         while q.empty() == False:
             try:
-                name = q.get(block=True, timeout=0.25)
-                name_que.append(name)
+                user_data = q.get(block=True, timeout=0.25)
+                name_que.append(user_data)
                 # q.task_done()
                 print(f"Recieved {name} UI")
             except queue.Empty:
@@ -225,7 +225,9 @@ def _uq_worker(q, base_url):
         last_request_check, last_request = request_check(last_request)
         if last_request_check:
             for name in name_que[:]:
-                result, _last_request = uq.assign_name_to_ui(name)
+                result, _last_request = uq.assign_name_to_ui(
+                    name["username"], name["backend"]
+                )
                 if result:
                     name_que.remove(name)
                     print(f"removed {name}, {name_que}")
