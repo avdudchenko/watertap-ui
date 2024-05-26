@@ -148,12 +148,13 @@ def start_new_ui_instance():
         global ACTIVE_SESSIONS
         global BACKEND_SESSION
         try:
-            send_user_name(username, username_id, backend)
+            working_name=f"{username}_{lookup[backend]['backend_name']}"
+            send_user_name(working_name, username_id, backend)
             got_user = False
             for i in range(60):
                 time.sleep(1)
                 lookup = load_current_lookup_table()
-                user_id_data = lookup.get(username)
+                user_id_data = lookup.get(working_name)
                 if user_id_data is not None:
                     user_id = user_id_data["user_id"]
                     first_login = user_id_data["first_login"]

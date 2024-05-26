@@ -111,7 +111,7 @@ class uq_manager:
         last_request = None
         self.load_backends()
         print(self.current_backends)
-        user_backend = self.current_backends.get(backend)
+        user_backend = self.current_backends.get(backend)['backend_file']
         if self.user_lookup.get(name) is None:
             for ui_id in self.current_apps:
                 if self.current_apps[str(ui_id)]["user_name"] == "NA":
