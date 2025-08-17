@@ -42,6 +42,7 @@ class uq_manager:
         backend_port=None,
         ui_id="123",
         backend_file="start_ui.bat",
+        backend_directory="D:\\github\\watertap-ui\\electron\\ui\\backend",
     ):
         self.current_backends = self.load_backends()
         print(ui_id, self.current_rcs.keys(), self._cont)
@@ -75,9 +76,12 @@ class uq_manager:
                 "backend_port": str(backend_port),
                 "user_name": "NA",
             }
-            update_entry_points("entery_point_managment/" + backend_file)
+            update_entry_points("entry_point_management/" + backend_file)
+            backend_loc = (
+                Path("D:\\github\\watertap-ui\\electron\\ui\\backend") / backend_file
+            )
             rc = subprocess.Popen(
-                "start_ui.bat",
+                "conda activate watertap-ui-env && python " + str(backend_loc),
                 # stdout=subprocess.DEVNULL,
                 # stderr=subprocess.STDOUT,
             )
