@@ -71,4 +71,4 @@ def update_entry_points(entry_point_file):
 
 
 if __name__ == "__main__":
-    update_entry_points("kenya_entry_point_file.txt")
+    update_entry_points("hms_models_tools_demo.txt")

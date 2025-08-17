@@ -20,7 +20,7 @@ app = Flask(__name__, static_folder="../electron/ui/build", static_url_path="/")
 
 
 SITE_NAME = "http://127.0.0.1:"
-WWW_SITE_NAME = "https://avdsystems.xyz:443/watertap_ui"
+WWW_SITE_NAME = "https://teremesystems.com:443/watertap_ui"
 
 ACTIVE_SESSIONS = {}
 

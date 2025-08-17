@@ -21,10 +21,11 @@ app = Flask(__name__, static_folder="../electron/ui/build", static_url_path="/")
 
 
 SITE_NAME = "http://127.0.0.1:"
-WWW_SITE_NAME = "https://avdsystems.xyz:443/watertap_ui"
+WWW_SITE_NAME = "https://teremesystems.com:443/watertap_ui"
 BACKEND_SERVER = "http://127.0.0.1:501"
 ACTIVE_SESSIONS = {}
 BACKEND_SESSION = requests.session()
+SERVER_LOCATION = "teremesystems.com"
 
 
 def load_current_port_refs():
@@ -140,51 +141,55 @@ def start_new_ui_instance():
     print(request)
     username = request.form["username"]
     pwd = request.form["pwd"]
+    print("Got username and pwd", username, pwd)
     username_id = encode(f"{username}:{pwd}")
     backend = encode(f"{pwd}")
     print("Got backend request", backend)
     lookup = load_accepted_users()
+    print("Got lookup table", lookup)
     if backend in lookup.keys():
         global ACTIVE_SESSIONS
         global BACKEND_SESSION
-        try:
-            working_name=f"{username}_{lookup[backend]['backend_name']}"
-            send_user_name(working_name, username_id, backend)
-            got_user = False
-            for i in range(60):
-                time.sleep(1)
-                lookup = load_current_lookup_table()
-                user_id_data = lookup.get(working_name)
-                if user_id_data is not None:
-                    user_id = user_id_data["user_id"]
-                    first_login = user_id_data["first_login"]
-                    print(user_id_data)
-                    if first_login == True:
-                        unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
-                    else:
-                        unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
-                    global ACTIVE_SESSIONS
-                    ACTIVE_SESSIONS[user_id] = requests.Session()
+        # try:
+        working_name = f"{username}_{lookup[backend]['backend_name']}"
+        send_user_name(working_name, username_id, backend)
+        got_user = False
+        for i in range(60):
+            time.sleep(1)
+            lookup = load_current_lookup_table()
+            print(lookup)
+            print(working_name)
+            user_id_data = lookup.get(working_name)
+            if user_id_data is not None:
+                user_id = user_id_data["user_id"]
+                first_login = user_id_data["first_login"]
+                print(user_id_data)
+                if first_login == True:
+                    unique_user_message = f"This is your first login, use username: {username}, to re-access saved flowsheet configurations!"
+                else:
+                    unique_user_message = f"Thank you for returning {username}, if this is your FIRST time accessing UI please return and enter a NEW user name!"
+                global ACTIVE_SESSIONS
+                ACTIVE_SESSIONS[user_id] = requests.Session()
 
-                    return render_template(
-                        "ui_redirect.html",
-                        url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
-                        unique_user_message=unique_user_message,
-                        user_link=f"{WWW_SITE_NAME}/{user_id}",
-                    )  # redirect(f"/watertap_ui/{username}")
-        except requests.exceptions.ConnectionError:
-            pass
+                return render_template(
+                    "ui_redirect.html",
+                    url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
+                    unique_user_message=unique_user_message,
+                    user_link=f"{WWW_SITE_NAME}/{user_id}",
+                )  # redirect(f"/watertap_ui/{username}")
+        # except requests.exceptions.ConnectionError:
+        #  pass
 
         return render_template(
             "user_creation_failed.html",
-            url_refresh=f"5;URL=https://avdsystems.xyz:443",
-            user_link=f"https://avdsystems.xyz:443",
+            url_refresh=f"5;URL=https://{SERVER_LOCATION}:443",
+            user_link=f"https://{SERVER_LOCATION}:443",
         )
     else:
         return render_template(
             "failed_login.html",
-            url_refresh=f"2;URL=https://avdsystems.xyz:443",
-            user_link=f"https://avdsystems.xyz:443",
+            url_refresh=f"2;URL=https://{SERVER_LOCATION}:443",
+            user_link=f"https://{SERVER_LOCATION}:443",
         )
 
 

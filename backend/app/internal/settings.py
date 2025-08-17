@@ -16,7 +16,7 @@ __author__ = "Dan Gunter"
 def get_env():
 
     # env_loc = Path(__file__).parent
-    usr_id = None
+    user_id = None
     env_loc = Path(__file__).parents[3]
     loc = env_loc / "electron" / "ui" / ".env"
     with open(loc) as reader:

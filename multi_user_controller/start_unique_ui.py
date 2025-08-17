@@ -5,7 +5,6 @@ import json
 import multiprocessing
 from multiprocessing import Pipe
 import random
-import watertap_ui
 
 from pathlib import Path
 import requests
@@ -17,6 +16,7 @@ from entery_point_managment.update_entry_points import update_entry_points
 
 NUMBER_OF_RUNNING_UIS = 0
 BUFFER = 0
+WATERTAP_UI_PATH = Path("D:\\github\\watertap-ui\\electron\\ui")
 
 
 class uq_manager:

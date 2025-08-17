@@ -1,5 +1,5 @@
 
-set watertap_ui_path=E:\work_software\watertap-ui\backend\app
+set watertap_ui_path=D:\github\watertap-ui\backend\app
 
 call conda activate watertap-ui-env
 

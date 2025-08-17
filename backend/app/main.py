@@ -6,10 +6,16 @@ import multiprocessing
 import idaes.logger as idaeslog
 
 ## Put DeferredImportCallbackFinder at the end of sys.meta_path list
-DeferredImportCallbackFinder = [finder for finder in sys.meta_path if "pyomo.common.dependencies" in repr(finder)]
+DeferredImportCallbackFinder = [
+    finder for finder in sys.meta_path if "pyomo.common.dependencies" in repr(finder)
+]
 if len(DeferredImportCallbackFinder) > 0:
-    DeferredImportCallbackFinder=DeferredImportCallbackFinder[0]
-    sys.meta_path[:] = [finder for finder in sys.meta_path if "pyomo.common.dependencies" not in repr(finder)]
+    DeferredImportCallbackFinder = DeferredImportCallbackFinder[0]
+    sys.meta_path[:] = [
+        finder
+        for finder in sys.meta_path
+        if "pyomo.common.dependencies" not in repr(finder)
+    ]
     sys.meta_path.append(DeferredImportCallbackFinder)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,7 +25,6 @@ from fastapi import FastAPI
 from app.internal.get_extensions import check_for_idaes_extensions, get_idaes_extensions
 from app.routers import flowsheets
 from fastapi.middleware.cors import CORSMiddleware
-import watertap_ui
 
 from pathlib import Path
 
