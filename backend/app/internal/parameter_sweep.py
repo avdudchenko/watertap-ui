@@ -1,8 +1,7 @@
 from pathlib import Path
 from fastapi import HTTPException
 import numpy as np
-from watertap.tools.parameter_sweep import LinearSample, ParameterSweep, parameter_sweep
-import watertap.examples.flowsheets.case_studies.wastewater_resource_recovery.amo_1575_magprex.magprex as magprex
+from parameter_sweep import LinearSample, ParameterSweep, parameter_sweep
 from importlib import import_module
 import idaes.logger as idaeslog
 from pyomo.environ import (
@@ -26,7 +25,6 @@ def get_conversion_unit(flowsheet, key):
 
 def set_up_sensitivity(m, solve, output_params):
     outputs = {}
-    # optimize_kwargs = {"fail_flag": False}
     optimize_kwargs = {}
     opt_function = solve
 
@@ -40,8 +38,16 @@ def set_up_sensitivity(m, solve, output_params):
     return outputs, optimize_kwargs, opt_function
 
 
+def get_conversion_unit(flowsheet, key):
+    obj = flowsheet.fs_exp.exports[key].obj
+    ui_units = flowsheet.fs_exp.exports[key].ui_units
+    temp = Var(initialize=1, units=obj.get_units())
+    temp.construct()
+    crv = value(pyunits.convert(temp, to_units=ui_units))
+    return crv
+
+
 def run_analysis(
-    m,
     flowsheet,
     parameters,
     output_params,
@@ -49,11 +55,8 @@ def run_analysis(
     interpolate_nan_outputs=True,
     custom_do_param_sweep_kwargs=None,
 ):
-    flowsheet = import_module(flowsheet)
-    try:
-        solve_function = flowsheet.solve
-    except:
-        solve_function = flowsheet.optimize
+    m = flowsheet.fs_exp.m
+    solve_function = flowsheet.get_action("solve")
     outputs, optimize_kwargs, opt_function = set_up_sensitivity(
         m, solve_function, output_params
     )
@@ -109,9 +112,7 @@ def run_parameter_sweep(flowsheet, info):
                     flowsheet.fs_exp.model_objects[key].lb is not None
                     and flowsheet.fs_exp.model_objects[key].ub is not None
                 ):
-                    results_table["headers"].append(
-                        flowsheet.fs_exp.model_objects[key].name
-                    )
+                    results_table["headers"].append(flowsheet.fs_exp.exports[key].name)
                     conversion_factor = get_conversion_unit(flowsheet, key)
                     try:
                         parameters.append(
@@ -141,17 +142,18 @@ def run_parameter_sweep(flowsheet, info):
                     keys.append(key)
         for key in flowsheet.fs_exp.model_objects:
             if (
-                flowsheet.fs_exp.model_objects[key].is_output
+                flowsheet.fs_exp.exports[key].is_output
                 or (
-                    not flowsheet.fs_exp.model_objects[key].is_output
-                    and flowsheet.fs_exp.model_objects[key].is_input
-                    and not flowsheet.fs_exp.model_objects[key].fixed
+                    not flowsheet.fs_exp.exports[key].is_output
+                    and flowsheet.fs_exp.exports[key].is_input
+                    and not flowsheet.fs_exp.exports[key].fixed
                 )
-                # and not flowsheet.fs_exp.model_objects[key].is_input
+                # and not flowsheet.fs_exp.exports[key].is_input
             ):
                 results_table["headers"].append(
                     flowsheet.fs_exp.model_objects[key].name
                 )
+
                 try:
                     conversion_factor = get_conversion_unit(flowsheet, key)
                 except Exception as e:
@@ -164,17 +166,12 @@ def run_parameter_sweep(flowsheet, info):
                     }
                 )
                 keys.append(key)
-        output_path = (
-            Path.home() / ".watertap" / "sweep_outputs" / f"{info.name}_sweep.csv"
-        )
+        output_path = Path.home() / ".nawi" / "sweep_outputs" / f"{info.name}_sweep.csv"
         results = run_analysis(
-            m=flowsheet.fs_exp.m,
-            # flowsheet=info.module[0:-3], # replace _ui instead?
-            flowsheet=info.module.replace("_ui", ""),
+            flowsheet=flowsheet,
             parameters=parameters,
             output_params=output_params,
             results_path=output_path,
-            # custom_do_param_sweep_kwargs=flowsheet.custom_do_param_sweep_kwargs,
         )
     except Exception as err:
         _log.error(f"err: {err}")
@@ -184,14 +181,6 @@ def run_parameter_sweep(flowsheet, info):
         for i in range(len(value)):
             if np.isnan(value[i]):
                 value[i] = None
-                # error_params = ""
-                # for j in range(len(parameters)):
-                #     error_param = parameters[j]["name"]
-                #     error_value = value[j]
-                #     error_params += f'{error_param}: {error_value}, '
-                # error_params = error_params[:-2]
-                # _log.error(f'Sweep produced invalid results: {error_params}')
-                # raise HTTPException(500, detail=f"Sweep produced invalid results for input parameters: {error_params}")
             else:
                 conversion_factor = conversion_factors[i]
                 value[i] = value[i] * conversion_factor

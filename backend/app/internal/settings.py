@@ -2,11 +2,15 @@
 Configuration for the backend
 """
 
+import os
 from pathlib import Path
 import logging
+from logging import handlers as logging_handlers
 from typing import List, Union
-from pydantic import validator, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+__author__ = "Dan Gunter"
 
 
 def get_env():
@@ -27,36 +31,69 @@ def get_env():
         return user_id
 
 
+_log = logging.getLogger(__name__)
+h = logging.StreamHandler()
+h.setFormatter(logging.Formatter("[%(levelname)s] %(name)s - %(message)s"))
+_log.addHandler(h)
+_log.setLevel(logging.WARNING)
+
+
+class Deployment:
+    """Values related to the deployment context of the UI,
+    e.g., NAWI WaterTAP, PROMMIS, or IDAES.
+    """
+
+    # env var for project name
+    PROJECT_ENV = "PSE_PROJECT"
+    # projects and their associated packages
+    PROJ = {"nawi": ("watertap",), "idaes": ("idaes",), "prommis": ("prommis",)}
+    DEFAULT_PROJ = "nawi"
+
+    def __init__(self, project=DEFAULT_PROJ):
+        _log.info(f"Deploy for project={project}")
+        if project not in self.PROJ.keys():
+            valid_projects = ", ".join((str(x) for x in self.PROJ))
+            raise ValueError(f"project '{project}' not in ({valid_projects})")
+        self.project = project
+        self.package = self.PROJ[project]
+        self.data_basedir = Path.home() / f".{self.project}"
+        try:
+            self.data_basedir.mkdir(parents=True, exist_ok=True)
+        except (FileNotFoundError, OSError) as err:
+            _log.error(f"error creating project data directory '{self.data_basedir}'")
+            raise
+        _log.info(
+            f"Deployment: project={self.project} package={self.package} data_basedir={self.data_basedir}"
+        )
+
+
 class AppSettings(BaseSettings):
     #: List of package names in which to look for flowsheets
-    packages: List[str] = ["watertap"]
-    data_basedir: Union[Path, None] = None
-    log_dir: Union[Path, None] = None
-    custom_flowsheets_dir: Union[Path, None] = None
+    packages: List[str]
+    log_dir: Path
+    custom_flowsheets_dir: Path
+    data_basedir: Path
 
-    # @validator("data_basedir", always=True)
-    @field_validator("data_basedir")
-    def validate_data_basedir(cls, v):
-        user_id = get_env()
-        if v is None:
-            v = Path.home() / ".watertap" / user_id / "flowsheets"
-        v.mkdir(parents=True, exist_ok=True)
-        return v
-
-    # @validator("log_dir", always=True)
     @field_validator("log_dir")
     def validate_log_dir(cls, v):
-        user_id = get_env()
-        if v is None:
-            v = Path.home() / ".watertap" / user_id / "logs"
+        _log.info(f"Creating log directory '{v}'")
         v.mkdir(parents=True, exist_ok=True)
 
-        loggingFormat = "[%(levelname)s] %(asctime)s %(name)s (%(filename)s:%(lineno)s): %(message)s"
-        loggingFileHandler = logging.handlers.RotatingFileHandler(
-            v / "watertap-ui_backend_logs.log", backupCount=2, maxBytes=5000000
+        logging_format = (
+            "[%(levelname)s] %(asctime)s %(name)s "
+            "(%(filename)s:%(lineno)s): %(message)s"
+        )
+        project_log_file = f"ui_backend_logs.log"
+        _log.info(
+            f"Logs will be in rotating files with base name " f"'{v/project_log_file}'"
+        )
+        logging_file_handler = logging_handlers.RotatingFileHandler(
+            v / project_log_file,
+            backupCount=2,
+            maxBytes=5000000,
         )
         logging.basicConfig(
-            level=logging.INFO, format=loggingFormat, handlers=[loggingFileHandler]
+            level=logging.INFO, format=logging_format, handlers=[logging_file_handler]
         )
         return v
 
@@ -69,5 +106,13 @@ class AppSettings(BaseSettings):
         v.mkdir(parents=True, exist_ok=True)
         return v
 
-    class Config:
-        env_prefix = "watertap_"
+    # class Config:
+    #     env_prefix = f"{_dpy.project.upper()}_"
+
+
+# def get_deployment() -> Deployment:
+#     return _dpy
+
+# def set_deployment(project_name) -> Deployment:
+#     _dpy = Deployment(project_name)
+#     return _dpy

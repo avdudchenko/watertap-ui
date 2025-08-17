@@ -1,9 +1,11 @@
 """
 Handle flowsheet-related API requests from web client.
 """
+
 # stdlib
 import io
 import aiofiles
+import json
 from pathlib import Path
 from typing import List, Dict, Union
 
@@ -19,13 +21,13 @@ import re
 from app.internal.flowsheet_manager import FlowsheetManager, FlowsheetInfo
 from app.internal.parameter_sweep import run_parameter_sweep
 from app.internal.log_parser import parse_logs
-from watertap.ui.fsapi import FlowsheetInterface, FlowsheetExport
+from idaes_flowsheet_processor.api import FlowsheetInterface, FlowsheetExport
 import idaes.logger as idaeslog
 
 CURRENT = "current"
 
 _log = idaeslog.getLogger(__name__)
-_solver_log = idaeslog.getLogger(__name__+'.solver')
+_solver_log = idaeslog.getLogger(__name__ + ".solver")
 
 router = APIRouter(
     prefix="/flowsheets",
@@ -49,14 +51,16 @@ async def get_all():
         each.set_last_run(flowsheet_manager.get_last_run(each.id_))
 
     try:
-        currentNumberOfSubprocesses, maxNumberOfSubprocesses = flowsheet_manager.get_number_of_subprocesses()
+        currentNumberOfSubprocesses, maxNumberOfSubprocesses = (
+            flowsheet_manager.get_number_of_subprocesses()
+        )
     except Exception as e:
-        _log.info(f'unable to get number of subprocesses: {e}')
+        _log.info(f"unable to get number of subprocesses: {e}")
         currentNumberOfSubprocesses = 1
         maxNumberOfSubprocesses = 8
-    
+
     return {
-        "flowsheet_list": flowsheet_list, 
+        "flowsheet_list": flowsheet_list,
         "currentNumberOfSubprocesses": currentNumberOfSubprocesses,
         "maxNumberOfSubprocesses": maxNumberOfSubprocesses,
     }
@@ -78,10 +82,9 @@ async def get_config(id_: str, build: str = "0") -> FlowsheetExport:
         info = flowsheet_manager.get_info(id_)
         _log.info(f"build param is 1, got info")
         flowsheet.build(build_options=flowsheet.fs_exp.build_options)
-        _log.info(f"BUILT FLOWSHEET CHUZ")
         info.updated(built=True)
         _log.info(f"updated has been confirmed")
-    _log.info(f"returning flowsheett .fs_exp")
+    _log.debug(f"returning flowsheeet .fs_exp")
     return flowsheet.fs_exp
 
 
@@ -120,13 +123,15 @@ async def solve(flowsheet_id: str, request: Request):
     # update input data before running a solve
     input_data = await request.json()
     try:
+        if _log.isEnabledFor(idaeslog.DEBUG):
+            _log.debug(f"Solve: Loading new data into flowsheet '{flowsheet_id}':\n"
+                       f"{json.dumps(input_data, indent=2)}\n")
         flowsheet.load(input_data)
-        _log.info(f"Loading new data into flowsheet '{flowsheet_id}'")
     except FlowsheetInterface.MissingObjectError as err:
-        _log.error(f"Loading new data into flowsheet {flowsheet_id} failed: {err}")
+        _log.error(f"Solve: Loading new data into flowsheet {flowsheet_id} failed: {err}")
         # XXX: return something about the error to caller
     except ValidationError as err:
-        _log.error(f"Loading new data into flowsheet {flowsheet_id} failed: {err}")
+        _log.error(f"Solve: Loading new data into flowsheet {flowsheet_id} failed: {err}")
         raise HTTPException(
             400,
             f"Cannot update flowsheet id='{flowsheet_id}' due to invalid data input",
@@ -161,13 +166,15 @@ async def sweep(flowsheet_id: str, request: Request):
     # update input data before running a sweep
     input_data = await request.json()
     try:
+        if _log.isEnabledFor(idaeslog.DEBUG):
+            _log.debug(f"Sweep: Loading new data into flowsheet '{flowsheet_id}':\n"
+                       f"{json.dumps(input_data, indent=2)}\n")
         flowsheet.load(input_data)
-        _log.info(f"Loading new data into flowsheet '{flowsheet_id}'")
     except FlowsheetInterface.MissingObjectError as err:
-        _log.error(f"Loading new data into flowsheet {flowsheet_id} failed: {err}")
+        _log.error(f"Sweep: Loading new data into flowsheet {flowsheet_id} failed: {err}")
         # XXX: return something about the error to caller
     except ValidationError as err:
-        _log.error(f"Loading new data into flowsheet {flowsheet_id} failed: {err}")
+        _log.error(f"Sweep: Loading new data into flowsheet {flowsheet_id} failed: {err}")
         raise HTTPException(
             400,
             f"Cannot update flowsheet id='{flowsheet_id}' due to invalid data input",
@@ -224,15 +231,17 @@ async def update(flowsheet_id: str, request: Request):
     flowsheet = flowsheet_manager.get_obj(flowsheet_id)
     input_data = await request.json()
     try:
+        if _log.isEnabledFor(idaeslog.DEBUG):
+            _log.debug(f"Update: Loading to flowsheet '{flowsheet_id}':\n"
+                       f"{json.dumps(input_data, indent=2)}\n")
         flowsheet.load(input_data)
-        _log.info(f"Loading new data into flowsheet '{flowsheet_id}'")
     except FlowsheetInterface.MissingObjectError as err:
         # this is unlikely, the model would need to change while running
         # (but could happen since 'build' and 'solve' can do anything they want)
-        _log.error(f"Loading new data into flowsheet {flowsheet_id} failed: {err}")
+        _log.error(f"Update: Loading new data into flowsheet {flowsheet_id} failed: {err}")
         # XXX: return something about the error to caller
     except ValidationError as err:
-        _log.error(f"Loading new data into flowsheet {flowsheet_id} failed: {err}")
+        _log.error(f"Update: Loading new data into flowsheet {flowsheet_id} failed: {err}")
         raise HTTPException(
             400,
             f"Cannot update flowsheet id='{flowsheet_id}' due to invalid data input",
@@ -280,23 +289,25 @@ async def upload_flowsheet(files: List[UploadFile]) -> str:
     Returns:
         Updated flowsheet list
     """
-    custom_flowsheets_path = Path.home() / ".watertap" / "custom_flowsheets"
     try:
         # get file contents
         new_files = []
         for file in files:
             # for file in files:
-            _log.info(f'reading {file.filename}')
+            _log.info(f"reading {file.filename}")
             new_files.append(file.filename)
             if "_ui.py" in file.filename:
                 new_id = file.filename.replace(".py", "")
             async with aiofiles.open(
-                f"{str(custom_flowsheets_path)}/{file.filename}", "wb"
+                f"{str(flowsheet_manager.app_settings.custom_flowsheets_dir)}/{file.filename}", "wb"
             ) as out_file:
                 content = await file.read()  # async read
                 await out_file.write(content)
-        flowsheet_manager.add_custom_flowsheet(new_files, new_id)
-        return {"return": "success boy"}
+        resp = flowsheet_manager.add_custom_flowsheet(new_files, new_id)
+        if resp == "success":
+            return new_id
+        else:
+            raise HTTPException(400, detail=f"Flowsheet Module not valid: {resp}")
 
     except Exception as e:
         _log.error(f"error on file upload: {str(e)}")
@@ -491,13 +502,16 @@ async def download_sweep(flowsheet_id: str) -> Path:
     # # User can now download the contents of that file
     return path
 
+
 @router.post("/update_number_of_subprocesses")
 async def remove_flowsheet(request: Request):
     data = await request.json()
-    new_value = data['value']
+    new_value = data["value"]
     flowsheet_manager.set_number_of_subprocesses(new_value)
 
     return {"new_value": new_value}
+
+
 @router.get("/get_logs")
 async def get_logs() -> List:
     """Get backend logs.
@@ -505,8 +519,20 @@ async def get_logs() -> List:
     Returns:
         Logs formatted as a list
     """
-    logs_path = flowsheet_manager.get_logs_path() / "watertap-ui_backend_logs.log"
+    logs_path = flowsheet_manager.get_logs_path()
     return parse_logs(logs_path, flowsheet_manager.startup_time)
+
+
+# @router.get("/project")
+# async def get_project_name() -> str:
+#     """Get Project name.
+
+#     Returns:
+#         Name of the project
+#     """
+#     dpy = get_deployment()
+#     return dpy.project
+
 
 @router.post("/download_logs", response_class=FileResponse)
 async def download_logs() -> Path:
@@ -515,5 +541,15 @@ async def download_logs() -> Path:
     Returns:
         Log file
     """
-    logs_path = flowsheet_manager.get_logs_path() / "watertap-ui_backend_logs.log"
+    logs_path = flowsheet_manager.get_logs_path()
     return logs_path
+
+@router.get("/set_project/{project_name}")
+async def set_project(project_name: str) -> str:
+    """Set Project in settings.
+
+    Returns:
+        Name of the project
+    """
+    flowsheet_manager.set_project(project_name)
+    return project_name

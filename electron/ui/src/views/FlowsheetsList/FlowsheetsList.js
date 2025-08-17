@@ -13,6 +13,7 @@ export default function FlowsheetsList(props) {
 
   const [rows, setRows] = useState([]); 
   const [errorMessage, setErrorMessage] = useState(false); 
+  const [ newFlowsheetError, setNewFlowsheetError] = useState(false)
   const [newFlowsheetDialogOpen, setNewFlowsheetDialogOpen] = useState(false);
   let location = useLocation();
   
@@ -44,12 +45,16 @@ export default function FlowsheetsList(props) {
   };
   
   return ( 
-    <Container maxWidth="xl">
+    <Container>
       <h2 style={{textAlign:"left"}}>Flowsheets</h2>  
 
       <FlowsheetsListTable rows={rows} handleNewFlowsheetDialogClickOpen={handleNewFlowsheetDialogClickOpen}></FlowsheetsListTable> 
       
-      <NewFlowsheetDialog open={newFlowsheetDialogOpen} onClose={handleReloadData}></NewFlowsheetDialog>
+      <NewFlowsheetDialog 
+        open={newFlowsheetDialogOpen} 
+        onClose={handleReloadData}
+        setNewFlowsheetError={setNewFlowsheetError}
+      />
       {location.state && 
       <Snackbar open={errorMessage} autoHideDuration={3000} onClose={() => setErrorMessage(false)}>
         <Alert severity="error">
@@ -57,8 +62,15 @@ export default function FlowsheetsList(props) {
         </Alert>
       </Snackbar> 
       }
+      {newFlowsheetError && 
+      <Snackbar open={true} autoHideDuration={30000} onClose={() => setNewFlowsheetError(false)}>
+        <Alert severity="error">
+          {newFlowsheetError}
+        </Alert>
+      </Snackbar> 
+      }
       
-    </Container> 
+    </Container>
   );
 
 }
