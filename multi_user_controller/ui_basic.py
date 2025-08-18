@@ -18,7 +18,7 @@ import os
 app = Flask(__name__, static_folder="../electron/ui/build", static_url_path="/")
 
 SITE_NAME = "http://127.0.0.1:"
-WWW_SITE_NAME = "https://teremesystems.com:443/watertap_ui"
+WWW_SITE_NAME = "https://temeresystems.com:443/watertap_ui"
 
 
 def inplace_change(location, filename, old_string, new_string, modname=None):
@@ -74,4 +74,4 @@ if __name__ == "__main__":
     # global uq_pipe
     # uq_pipe = start_uq_worker(WWW_SITE_NAME)
 
-    app.run(debug=True, port=500)
+    app.run(debug=True, port=2000)

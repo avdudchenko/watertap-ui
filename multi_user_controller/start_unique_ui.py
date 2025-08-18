@@ -16,17 +16,17 @@ from entery_point_managment.update_entry_points import update_entry_points
 
 NUMBER_OF_RUNNING_UIS = 0
 BUFFER = 0
-WATERTAP_UI_PATH = Path("D:\\github\\watertap-ui\\electron\\ui")
+WATERTAP_UI_PATH = Path("/home/sovietez/github/watertap-ui/electron/ui")
 
 
 class uq_manager:
-    def __init__(self, base_url="http://localhost:500/watertap_ui"):
+    def __init__(self, base_url="http://localhost:2001/watertap_ui"):
         self.current_apps = {}
         self.user_lookup = {}
         self.current_rcs = {}
         self.load_prior_setting()
         self.load_backends()
-        self.front_port = 3000
+        self.front_port = 2000
         self.backend_port = 8000
         self.port_step = 2
         self.cur_unique_ui_id = 10000
@@ -41,8 +41,8 @@ class uq_manager:
         front_port=None,
         backend_port=None,
         ui_id="123",
-        backend_file="start_ui.bat",
-        backend_directory="D:\\github\\watertap-ui\\electron\\ui\\backend",
+        backend_file="/home/sovietez/github/watertap-ui/multi_user_controller/start_ui.sh",
+        backend_execution_file= "/home/sovietez/github/watertap-ui/multi_user_controller/start_ui.sh",
     ):
         self.current_backends = self.load_backends()
         print(ui_id, self.current_rcs.keys(), self._cont)
@@ -54,7 +54,7 @@ class uq_manager:
                 backend_port = self.backend_port + self.port_step
                 self.backend_port = backend_port
             # configure .env for UI
-            with open("../electron/ui/.env", "w") as writer:
+            with open("/home/sovietez/github/watertap-ui/electron/ui/.env", "w") as writer:
                 writer.write(f"REACT_APP_BACKEND_SERVER={self.base_url}/{str(ui_id)}\n")
                 writer.write(
                     f"REACT_APP_FRONTEND_SERVER={self.base_url}/{str(ui_id)}\n"
@@ -76,12 +76,9 @@ class uq_manager:
                 "backend_port": str(backend_port),
                 "user_name": "NA",
             }
-            update_entry_points("entry_point_management/" + backend_file)
-            backend_loc = (
-                Path("D:\\github\\watertap-ui\\electron\\ui\\backend") / backend_file
-            )
+            update_entry_points(self.watertap_ui_path/f"multi_user_controller/entery_point_managment/{backend_file}")
             rc = subprocess.Popen(
-                "conda activate watertap-ui-env && python " + str(backend_loc),
+                backend_execution_file,
                 # stdout=subprocess.DEVNULL,
                 # stderr=subprocess.STDOUT,
             )
@@ -194,14 +191,14 @@ class uq_manager:
     def update_jsconfig(self, address_base):
         for i in range(10):
             try:
-                f = open(r"..\electron\ui\package.json")
+                f = open(self.watertap_ui_path/ "electron/ui/package.json")
                 jsconfig = json.load(f)
                 print(jsconfig)
                 jsconfig["homepage"] = address_base
                 break
             except IOError:
                 pass
-        with open(r"..\electron\ui\package.json", "w") as f:
+        with open(self.watertap_ui_path/ "electron/ui/package.json", "w") as f:
             json.dump(jsconfig, f)
 
 
@@ -210,19 +207,24 @@ def request_check(url):
         return True, url
     else:
         try:
-            r = requests.get(url, timeout=1)
-            # print(r.content)
-            r = r.json()
-            if r["message"] == "Hello FastAPI":
-                return True, None
-            else:
-                return False, url
-        except requests.exceptions.ConnectTimeout:
-            return False, url
+            for i in range(5):
+                print(url)
+                r = requests.get(url, timeout=1)
+                # print(r.content)
+                r = r.json()
+                print(r)
+                if r["message"] == "Hello FastAPI":
+                    return True, None
+                else:
+                    time.sleep(1)
+        except:
+            time.sleep(1)
+        return False, url
 
 
 def _uq_worker(q, base_url):
     uq = uq_manager(base_url)
+    print(uq, base_url)
     global NUMBER_OF_RUNNING_UIS
     global BUFFER
     last_request = None

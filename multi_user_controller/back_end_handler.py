@@ -20,7 +20,7 @@ app = Flask(__name__, static_folder="../electron/ui/build", static_url_path="/")
 
 
 SITE_NAME = "http://127.0.0.1:"
-WWW_SITE_NAME = "https://teremesystems.com:443/watertap_ui"
+WWW_SITE_NAME = "https://temeresystems.com:443/watertap_ui"
 
 ACTIVE_SESSIONS = {}
 
@@ -45,7 +45,7 @@ def get_servers():
 if __name__ == "__main__":
     global uq_pipe
     global uqm
-    uqm = uq_manager()
+    uqm = uq_manager("http://localhost:2001/watertap_ui")
     uq_pipe = start_uq_worker(WWW_SITE_NAME)
     # app.run(debug=True, port=500)
-    serve(app, host="127.0.0.1", port=501)
+    serve(app, host="127.0.0.1", port=2001)

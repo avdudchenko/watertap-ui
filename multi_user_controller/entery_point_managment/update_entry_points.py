@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 
-conda_prefix = os.environ["CONDA_PREFIX"]
+conda_prefix = '/home/sovietez/miniconda3/envs/watertap-ui-env'
 
 
 def update_entry_points(entry_point_file):

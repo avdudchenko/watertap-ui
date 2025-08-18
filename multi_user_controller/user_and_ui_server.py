@@ -9,7 +9,6 @@ from start_unique_ui import start_uq_worker
 import os
 import re
 import hashlib
-
 # You must initialize logging, otherwise you'll not see debug output.
 # logging.basicConfig()
 # logging.getLogger().setLevel(logging.DEBUG)
@@ -17,16 +16,15 @@ import hashlib
 # requests_log.setLevel(logging.DEBUG)
 # requests_log.propagate = True
 # app = Flask(__name__)
-app = Flask(__name__, static_folder="../electron/ui/build", static_url_path="/")
-
+app = Flask(__name__, static_folder="/home/sovietez/github/watertap-ui/electron/ui/build", static_url_path="/")
 
 SITE_NAME = "http://127.0.0.1:"
-WWW_SITE_NAME = "https://teremesystems.com:443/watertap_ui"
-BACKEND_SERVER = "http://127.0.0.1:501"
+WWW_SITE_NAME = "https://temeresystems.com:443/watertap_ui"
+BACKEND_SERVER = "http://127.0.0.1:2001"
 ACTIVE_SESSIONS = {}
 BACKEND_SESSION = requests.session()
-SERVER_LOCATION = "teremesystems.com"
-
+SERVER_LOCATION = "temeresystems.com"
+WATERTAP_UI_PATH = "/home/sovietez/github/watertap-ui/electron"
 
 def load_current_port_refs():
     for i in range(10):
@@ -66,51 +64,72 @@ def inplace_change(location, filename, old_string, new_string, modname=None):
         s = f.read()
     if modname is not None:
         sf = filename.split(".")[-1]
-        filename.replace("." + sf, "")
-        filename = filename + str(modname) + "." + sf
+        filename= filename.replace("." + sf, "")
+        filename = filename +  str(modname) + "." + sf
     with open(os.path.join(location, filename), "w") as f:
-        print('Changing "{old_string}" to "{new_string}" in {filename}')
-
-        s = re.sub(old_string, new_string, s)
+        print(f'Changing {old_string} to {new_string} in {filename}')
+        if isinstance(old_string, list):
+            for old_s in old_string:
+                s = re.sub(old_s, new_string, s)
+        else:
+            s=re.sub(old_string,new_string, s)
         f.write(s)
+    print('wrote changes')
+    #filename = os.path.join(location, filename)
+    print('new f', filename)
     return filename
 
 
 @app.route("/watertap_ui/<string:user>")
 def ui_index(user):
+    print('watertaup', user)
     path = inplace_change(
-        "../electron/ui/build",
+        f"{WATERTAP_UI_PATH}/ui/build",
         "index.html",
-        "watertap_ui/?(.*?)/",
-        f"watertap_ui/{user}/",
+        "/watertap_ui/?(.*?)/",
+        f"/watertap_ui/{user}/",
         modname=user,
     )
-    return app.send_static_file(path)
+    print('watertapUi', path)
+    f = app.send_static_file(path) 
+    print(f)
+    return f
 
 
 @app.route("/watertap_ui/<string:user>/<path:path>")
 def ui(user, path):
-    print(user, path)
+    print('creating user ', user, path)
     if ".js" in path and ".js.map" not in path:
         if user is not None:
             path = inplace_change(
-                "../electron/ui/build",
+                f"{WATERTAP_UI_PATH}/ui/build/static/",
                 path,
-                "https://avdsystems.xyz:443/watertap_ui/?(.*?)/",
-                f"https://avdsystems.xyz:443/watertap_ui_backend/{user}/",
+                "https://temeresystems:8001/?(.*?)/",
+                f"https://{SERVER_LOCATION}:443/watertap_ui_backend/{user}/",
                 modname=user,
             )
         else:
             raise ValueError
-    print(path)
+    if ".css" in path:# and ".css.map" not in path:
+        if ".css.map" not in path:
+            path = inplace_change(
+                f"{WATERTAP_UI_PATH}/ui/build/static/",
+                path,
+                "/watertap_ui/?(.*?)/",
+                f"watertap_ui/{user}/",
+                modname=user,
+            )
+        path = 'static/'+path
+    print('done changing, sending file', path)
     result = app.send_static_file(path)
+    print('result', result)
     return result
 
 
 def get_port(user, path):
     PORT_REFERENCE = load_current_port_refs()
     if user in PORT_REFERENCE.keys():
-        if "flowsheets" in path:
+        if "flowsheets" in path or "set_project" in path:
             path = f'{PORT_REFERENCE[user]["backend_port"]}/{path}'
             print("updated path", path)
             return path
@@ -218,7 +237,7 @@ def proxy(user, path):
     path = get_port(user, path)
     if path != False:
         req_string = request.query_string.decode()
-        print("sent_path", f"{SITE_NAME}/watertap_ui_backend/{user}/{path}", req_string)
+        print("sent_path", f"{SITE_NAME}/watertap_ui_backend/{user}/{path}", 'req str', req_string)
         print(f"{SITE_NAME}{path}", req_string)  # , request.method)
         ACTIVE_SESSIONS = get_active_session(user)
         if req_string != "":
@@ -279,5 +298,5 @@ def proxy(user, path):
 
 
 if __name__ == "__main__":
-
-    serve(app, host="127.0.0.1", port=500, threads=7)
+    app.run(debug=True, port=2000)
+    serve(app, host="127.0.0.1", port=2000, threads=7)
