@@ -9,6 +9,7 @@ dependencies:
   - nodejs=20.9.0
   - flask
   - waitress
+  - python-dotenv
   - pip:
     - -r backend/requirements.txt
     # - git+https://github.com/avdudchenko/reaktoro-pse.git@clean_up_of_major_refactor

@@ -53,7 +53,7 @@ export const downloadLogs = () => {
 }
 
 export const setProject = (project) => {
-    return fetch('http://localhost:8001/flowsheets/set_project/'+project, {
+    return fetch(process.env.REACT_APP_BACKEND_SERVER+'/flowsheets/set_project/'+project, {
         method: 'GET', 
         mode: 'cors'
     });

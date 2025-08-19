@@ -61,7 +61,7 @@
       "last 1 safari version"
     ]
   },
-  "homepage": ".",
+  "homepage": "/watertap_ui/",
   "build": {
     "appId": "com.electron.watertap-ui",
     "extends": null,

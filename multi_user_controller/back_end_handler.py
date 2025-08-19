@@ -9,6 +9,10 @@ from start_unique_ui import start_uq_worker, uq_manager
 import os
 import re
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # You must initialize logging, otherwise you'll not see debug output.
 # logging.basicConfig()
 # logging.getLogger().setLevel(logging.DEBUG)
@@ -16,11 +20,19 @@ import re
 # requests_log.setLevel(logging.DEBUG)
 # requests_log.propagate = True
 # app = Flask(__name__)
-app = Flask(__name__, static_folder="../electron/ui/build", static_url_path="/")
 
 
-SITE_NAME = "http://127.0.0.1:"
-WWW_SITE_NAME = "https://temeresystems.com:443/watertap_ui"
+WATERT_UI_LINK = os.getenv("WATERT_UI_LINK", "http://127.0.0.1:2000/watertap_ui")
+UNIQUE_SESSION_HANDLER = os.getenv(
+    "UNIQUE_SESSION_HANDLER", "http://localhost:2001/watertap_ui"
+)
+WATERTAP_UI_PATH = os.getenv("WATERTAP_UI_PATH", "../electron/build")
+
+app = Flask(
+    __name__,
+    static_folder=WATERTAP_UI_PATH,
+    static_url_path="/",
+)
 
 ACTIVE_SESSIONS = {}
 
@@ -45,7 +57,7 @@ def get_servers():
 if __name__ == "__main__":
     global uq_pipe
     global uqm
-    uqm = uq_manager("http://localhost:2001/watertap_ui")
-    uq_pipe = start_uq_worker(WWW_SITE_NAME)
+    uqm = uq_manager(UNIQUE_SESSION_HANDLER)
+    uq_pipe = start_uq_worker(WATERT_UI_LINK)
     # app.run(debug=True, port=500)
     serve(app, host="127.0.0.1", port=2001)

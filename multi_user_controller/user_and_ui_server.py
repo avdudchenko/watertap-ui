@@ -9,6 +9,10 @@ from start_unique_ui import start_uq_worker
 import os
 import re
 import hashlib
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # You must initialize logging, otherwise you'll not see debug output.
 # logging.basicConfig()
 # logging.getLogger().setLevel(logging.DEBUG)
@@ -16,15 +20,22 @@ import hashlib
 # requests_log.setLevel(logging.DEBUG)
 # requests_log.propagate = True
 # app = Flask(__name__)
-app = Flask(__name__, static_folder="/home/sovietez/github/watertap-ui/electron/ui/build", static_url_path="/")
 
-SITE_NAME = "http://127.0.0.1:"
-WWW_SITE_NAME = "https://temeresystems.com:443/watertap_ui"
-BACKEND_SERVER = "http://127.0.0.1:2001"
+WATERTAP_UI_PATH = os.getenv("WATERTAP_UI_PATH", "../electron/build")
+WATERT_UI_LINK = os.getenv("WATERT_UI_LINK", "http://127.0.0.1:2000/watertap_ui")
+BACKEND_SERVER = os.getenv("BACKEND_SERVER", "http://127.0.0.1")
+BACKEND_SERVER_PORT = os.getenv("BACKEND_SERVER_PORT", "2001")
 ACTIVE_SESSIONS = {}
 BACKEND_SESSION = requests.session()
-SERVER_LOCATION = "temeresystems.com"
-WATERTAP_UI_PATH = "/home/sovietez/github/watertap-ui/electron"
+SERVER_LOCATION = os.getenv("SERVER_LOCATION", "http://127.0.0.1:2000")
+REACT_UI_LOCATION = os.getenv("REACT_UI_LOCATION", "/watertap_ui/")
+REACT_BACKEND_LINK = os.getenv("REACT_BACKEND_LINK", "http://localhost:8002")
+app = Flask(
+    __name__,
+    static_folder=WATERTAP_UI_PATH,
+    static_url_path="/",
+)
+
 
 def load_current_port_refs():
     for i in range(10):
@@ -59,70 +70,71 @@ def load_accepted_users():
     return {}
 
 
-def inplace_change(location, filename, old_string, new_string, modname=None):
+def inplace_change(location, filename, old_string=None, new_string=None, modname=None):
     with open(os.path.join(location, filename)) as f:
         s = f.read()
     if modname is not None:
         sf = filename.split(".")[-1]
-        filename= filename.replace("." + sf, "")
-        filename = filename +  str(modname) + "." + sf
+        filename = filename.replace("." + sf, "")
+        filename = filename + str(modname) + "." + sf
     with open(os.path.join(location, filename), "w") as f:
-        print(f'Changing {old_string} to {new_string} in {filename}')
-        if isinstance(old_string, list):
-            for old_s in old_string:
-                s = re.sub(old_s, new_string, s)
+        print(f"Changing {old_string} to {new_string} in {filename}")
+        if old_string is None or new_string is None:
+            pass
+
         else:
-            s=re.sub(old_string,new_string, s)
+            s = re.sub(old_string, new_string, s)
         f.write(s)
-    print('wrote changes')
-    #filename = os.path.join(location, filename)
-    print('new f', filename)
+    print("wrote changes")
+    print("new filename", filename)
     return filename
 
 
 @app.route("/watertap_ui/<string:user>")
 def ui_index(user):
-    print('watertaup', user)
+    print("watertaup", user)
     path = inplace_change(
-        f"{WATERTAP_UI_PATH}/ui/build",
+        f"{WATERTAP_UI_PATH}",
         "index.html",
-        "/watertap_ui/?(.*?)/",
+        f"{REACT_UI_LOCATION}?(.*?)",
         f"/watertap_ui/{user}/",
         modname=user,
     )
-    print('watertapUi', path)
-    f = app.send_static_file(path) 
+    print("watertapUi", path)
+    f = app.send_static_file(path)
     print(f)
     return f
 
 
 @app.route("/watertap_ui/<string:user>/<path:path>")
 def ui(user, path):
-    print('creating user ', user, path)
+    print("creating user ", user, path)
     if ".js" in path and ".js.map" not in path:
         if user is not None:
             path = inplace_change(
-                f"{WATERTAP_UI_PATH}/ui/build/static/",
+                f"{WATERTAP_UI_PATH}/",
                 path,
-                "https://temeresystems:8001/?(.*?)/",
-                f"https://{SERVER_LOCATION}:443/watertap_ui_backend/{user}/",
+                f"{REACT_BACKEND_LINK}/?(.*?)",
+                f"{SERVER_LOCATION}/watertap_ui_backend/{user}/",
                 modname=user,
             )
         else:
             raise ValueError
-    if ".css" in path:# and ".css.map" not in path:
-        if ".css.map" not in path:
-            path = inplace_change(
-                f"{WATERTAP_UI_PATH}/ui/build/static/",
-                path,
-                "/watertap_ui/?(.*?)/",
-                f"watertap_ui/{user}/",
-                modname=user,
-            )
-        path = 'static/'+path
-    print('done changing, sending file', path)
+    elif "static" not in path:
+        path = "static/" + path
+    # if ".css" in path:# and ".css.map" not in path:
+    #     if ".css.map" not in path:
+    #         path = inplace_change(
+    #             f"{WATERTAP_UI_PATH}/ui/build/static/",
+    #             path,
+    #             "/watertap_ui/?(.*?)/",
+    #             f"watertap_ui/{user}/",
+    #             modname=user,
+    #         )
+    #     path = 'static/'+path
+    print("done changing, sending file", path)
     result = app.send_static_file(path)
-    print('result', result)
+    print("result", result)
     return result
 
 
@@ -192,23 +204,23 @@ def start_new_ui_instance():
 
                 return render_template(
                     "ui_redirect.html",
-                    url_refresh=f"5;URL={WWW_SITE_NAME}/{user_id}",
+                    url_refresh=f"5;URL={WATERT_UI_LINK}/{user_id}",
                     unique_user_message=unique_user_message,
-                    user_link=f"{WWW_SITE_NAME}/{user_id}",
+                    user_link=f"{WATERT_UI_LINK}/{user_id}",
                 )  # redirect(f"/watertap_ui/{username}")
         # except requests.exceptions.ConnectionError:
         #  pass
 
         return render_template(
             "user_creation_failed.html",
-            url_refresh=f"5;URL=https://{SERVER_LOCATION}:443",
-            user_link=f"https://{SERVER_LOCATION}:443",
+            url_refresh=f"5;URL={SERVER_LOCATION}",
+            user_link=f"{SERVER_LOCATION}",
         )
     else:
         return render_template(
             "failed_login.html",
-            url_refresh=f"2;URL=https://{SERVER_LOCATION}:443",
-            user_link=f"https://{SERVER_LOCATION}:443",
+            url_refresh=f"2;URL={SERVER_LOCATION}",
+            user_link=f"{SERVER_LOCATION}",
         )
 
 
@@ -229,7 +241,8 @@ def get_active_session(user):
     methods=["GET", "POST", "OPTIONS", "DELETE"],
 )
 def proxy(user, path):
-    global SITE_NAME
+    global BACKEND_SERVER
+    global BACKEND_SERVER_PORT
     global PORT_REFERENCE
     # path = string
     print("original_path", path)
@@ -237,14 +250,23 @@ def proxy(user, path):
     path = get_port(user, path)
     if path != False:
         req_string = request.query_string.decode()
-        print("sent_path", f"{SITE_NAME}/watertap_ui_backend/{user}/{path}", 'req str', req_string)
-        print(f"{SITE_NAME}{path}", req_string)  # , request.method)
+        print(
+            "sent_path",
+            f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}/watertap_ui_backend/{user}/{path}",
+            "req str",
+            req_string,
+        )
+        print(
+            f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}{path}", req_string
+        )  # , request.method)
         ACTIVE_SESSIONS = get_active_session(user)
         if req_string != "":
             path = f"{path}?{req_string}"
         if request.method == "GET":
             ts = time.time()
-            resp = ACTIVE_SESSIONS[user].get(f"{SITE_NAME}{path}", timeout=None)
+            resp = ACTIVE_SESSIONS[user].get(
+                f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}{path}", timeout=None
+            )
             print("get", time.time() - ts)
             ts = time.time()
             excluded_headers = []
@@ -272,7 +294,7 @@ def proxy(user, path):
         elif request.method == "POST":
             # print(request.get_data())
             resp = ACTIVE_SESSIONS[user].post(
-                f"{SITE_NAME}{path}", data=request.get_data()
+                f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}{path}", data=request.get_data()
             )  # json=request.get_json())
             excluded_headers = [
                 # "content-encoding",
@@ -292,7 +314,11 @@ def proxy(user, path):
             response = Response(resp.content, resp.status_code, headers)
             return response
         elif request.method == "DELETE":
-            resp = ACTIVE_SESSIONS[user].delete(f"{SITE_NAME}{path}").content
+            resp = (
+                ACTIVE_SESSIONS[user]
+                .delete(f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}{path}")
+                .content
+            )
             response = Response(resp.content, resp.status_code, headers)
         return response
 

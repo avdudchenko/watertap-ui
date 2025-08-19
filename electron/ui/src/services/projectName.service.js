@@ -4,6 +4,6 @@
  * @returns {Promise<Response>}
  */
 export const getProjectName = () => {
-    return fetch('http://localhost:8001/flowsheets/project', {mode: 'cors'})
+    return fetch(process.env.REACT_APP_BACKEND_SERVER+'/flowsheets/project', {mode: 'cors'})
         .then((response) => response.json());
 }

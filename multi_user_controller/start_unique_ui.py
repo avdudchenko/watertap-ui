@@ -13,10 +13,15 @@ import queue
 global NUMBER_OF_RUNNING_UIS
 global BUFFER
 from entery_point_managment.update_entry_points import update_entry_points
+from dotenv import load_dotenv
 
+load_dotenv()
 NUMBER_OF_RUNNING_UIS = 0
 BUFFER = 0
-WATERTAP_UI_PATH = Path("/home/sovietez/github/watertap-ui/electron/ui")
+WATERTAP_UI_PATH = Path(os.getenv("WATERTAP_UI_PATH", "../electron/build"))
+BACKEND_EXECUTION_FILE = Path(os.getenv("BACKEND_EXECUTION_FILE", "start_ui.sh"))
+
+BACKEND_SERVER = os.getenv("BACKEND_SERVER", "http://127.0.0.1")
 
 
 class uq_manager:
@@ -33,7 +38,6 @@ class uq_manager:
         self.base_url = base_url
         self.used_apps = 0
         self.ui_step = 2
-        self.watertap_ui_path = Path(__file__).parent.parent
         self._cont = 0
 
     def start_unique_ui(
@@ -41,8 +45,7 @@ class uq_manager:
         front_port=None,
         backend_port=None,
         ui_id="123",
-        backend_file="/home/sovietez/github/watertap-ui/multi_user_controller/start_ui.sh",
-        backend_execution_file= "/home/sovietez/github/watertap-ui/multi_user_controller/start_ui.sh",
+        backend_file=None,
     ):
         self.current_backends = self.load_backends()
         print(ui_id, self.current_rcs.keys(), self._cont)
@@ -54,41 +57,44 @@ class uq_manager:
                 backend_port = self.backend_port + self.port_step
                 self.backend_port = backend_port
             # configure .env for UI
-            with open("/home/sovietez/github/watertap-ui/electron/ui/.env", "w") as writer:
-                writer.write(f"REACT_APP_BACKEND_SERVER={self.base_url}/{str(ui_id)}\n")
-                writer.write(
-                    f"REACT_APP_FRONTEND_SERVER={self.base_url}/{str(ui_id)}\n"
-                )
-                writer.write(f"REACT_APP_BACKEND_PORT={backend_port}\n")
-                writer.write(f"REACT_APP_FRONTEND_PORT={front_port}\n")
-                writer.write(f"port={front_port}\n")
-                writer.write(f"BROWSER=none\n")
-                writer.write(f"user_id={str(ui_id)}")
+            # with open(
+            #     "/home/sovietez/github/watertap-ui/electron/ui/.env", "w"
+            # ) as writer:
+            #     writer.write(f"REACT_APP_BACKEND_SERVER={self.base_url}/{str(ui_id)}\n")
+            #     writer.write(
+            #         f"REACT_APP_FRONTEND_SERVER={self.base_url}/{str(ui_id)}\n"
+            #     )
+            #     writer.write(f"REACT_APP_BACKEND_PORT={backend_port}\n")
+            #     writer.write(f"REACT_APP_FRONTEND_PORT={front_port}\n")
+            #     writer.write(f"port={front_port}\n")
+            #     writer.write(f"BROWSER=none\n")
+            #     writer.write(f"user_id={str(ui_id)}")
 
             print(f"start {ui_id}")
-            self.update_jsconfig(f"/watertap_ui/{str(ui_id)}")
-            backend_location = self.watertap_ui_path / "backend" / "app" / "main.py"
+            # self.update_jsconfig(f"/watertap_ui/{str(ui_id)}")
             self.current_rcs[str(ui_id)] = "temp"
-
             print("started")
             self.current_apps[str(ui_id)] = {
                 "frontend_port": str(front_port),
                 "backend_port": str(backend_port),
                 "user_name": "NA",
             }
-            update_entry_points(self.watertap_ui_path/f"multi_user_controller/entery_point_managment/{backend_file}")
+            update_entry_points(
+                Path(WATERTAP_UI_PATH)
+                / f"multi_user_controller/entery_point_managment/{backend_file}"
+            )
             rc = subprocess.Popen(
-                backend_execution_file,
+                BACKEND_EXECUTION_FILE,
                 # stdout=subprocess.DEVNULL,
                 # stderr=subprocess.STDOUT,
             )
             self.current_rcs[str(ui_id)] = rc
             self.update_current_uqs()
             # time.sleep(8)
-            print("Started new ui test on ", f"http://127.0.0.1:{backend_port}/")
-            return f"http://127.0.0.1:{backend_port}/"
+            print("Started new ui test on ", f"{BACKEND_SERVER}:{backend_port}/")
+            return f"{BACKEND_SERVER}:{backend_port}/"
         else:
-            return f"http://127.0.0.1:{self.current_apps[str(ui_id)]['backend_port']}/"
+            return f"{BACKEND_SERVER}:{self.current_apps[str(ui_id)]['backend_port']}/"
 
     def generate_unique_UI(self, id_nums=None, backend_file="start_ui.bat"):
 
@@ -188,18 +194,18 @@ class uq_manager:
             print("could not load users")
             pass
 
-    def update_jsconfig(self, address_base):
-        for i in range(10):
-            try:
-                f = open(self.watertap_ui_path/ "electron/ui/package.json")
-                jsconfig = json.load(f)
-                print(jsconfig)
-                jsconfig["homepage"] = address_base
-                break
-            except IOError:
-                pass
-        with open(self.watertap_ui_path/ "electron/ui/package.json", "w") as f:
-            json.dump(jsconfig, f)
+    # def update_jsconfig(self, address_base):
+    #     for i in range(10):
+    #         try:
+    #             f = open(self.watertap_ui_path / "electron/ui/package.json")
+    #             jsconfig = json.load(f)
+    #             print(jsconfig)
+    #             jsconfig["homepage"] = address_base
+    #             break
+    #         except IOError:
+    #             pass
+    #     with open(self.watertap_ui_path / "electron/ui/package.json", "w") as f:
+    #         json.dump(jsconfig, f)
 
 
 def request_check(url):
