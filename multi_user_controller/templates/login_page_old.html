@@ -1,0 +1,18 @@
+
+<!DOCTYPE html>
+<html>
+<body style="background-color: #deebf7">
+<h2>Welcome to unofficial home of WaterTAP UI WebAPP, hosted by NAWI-Analysis!</h2>
+<p>Please use provided login name and password to access your UI.</p>
+
+<form action="{{ url_for('start_new_ui_instance') }}" method="post">
+    <h3><label for="username">Username:</label>
+    <input type="text" name="username" required><br>
+    <label for="pwd">Password:</label>
+    <input type="password" id="pwd" name="pwd"> <br>
+    <button type="submit">Start UI</button></h3>
+</form> 
+</body>
+</html>
+
+

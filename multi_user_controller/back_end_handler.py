@@ -24,7 +24,7 @@ load_dotenv()
 
 WATERT_UI_LINK = os.getenv("WATERT_UI_LINK", "http://127.0.0.1:2000/watertap_ui")
 UNIQUE_SESSION_HANDLER = os.getenv(
-    "UNIQUE_SESSION_HANDLER", "http://localhost:2001/watertap_ui"
+    "UNIQUE_SESSION_HANDLER", "http://localhost:2001"
 )
 WATERTAP_UI_PATH = os.getenv("WATERTAP_UI_PATH", "../electron/build")
 

@@ -18,9 +18,8 @@ from dotenv import load_dotenv
 load_dotenv()
 NUMBER_OF_RUNNING_UIS = 0
 BUFFER = 0
-WATERTAP_UI_PATH = Path(os.getenv("WATERTAP_UI_PATH", "../electron/build"))
-BACKEND_EXECUTION_FILE = Path(os.getenv("BACKEND_EXECUTION_FILE", "start_ui.sh"))
-
+BACKEND_START_SCRIPT = Path(os.getenv("BACKEND_START_SCRIPT", "start_ui.sh"))
+ENTERY_POINTS_PATH = Path(os.getenv("ENTERY_POINTS_PATH", "../multi_user_controller/entery_point_managment"))
 BACKEND_SERVER = os.getenv("BACKEND_SERVER", "http://127.0.0.1")
 
 
@@ -80,11 +79,10 @@ class uq_manager:
                 "user_name": "NA",
             }
             update_entry_points(
-                Path(WATERTAP_UI_PATH)
-                / f"multi_user_controller/entery_point_managment/{backend_file}"
+               Path(ENTERY_POINTS_PATH / backend_file)
             )
             rc = subprocess.Popen(
-                BACKEND_EXECUTION_FILE,
+                BACKEND_START_SCRIPT,
                 # stdout=subprocess.DEVNULL,
                 # stderr=subprocess.STDOUT,
             )

@@ -21,7 +21,7 @@ load_dotenv()
 # requests_log.propagate = True
 # app = Flask(__name__)
 
-WATERTAP_UI_PATH = os.getenv("WATERTAP_UI_PATH", "../electron/build")
+WATERTAP_UI_PATH = os.getenv("WATERTAP_UI_PATH", "")
 WATERT_UI_LINK = os.getenv("WATERT_UI_LINK", "http://127.0.0.1:2000/watertap_ui")
 BACKEND_SERVER = os.getenv("BACKEND_SERVER", "http://127.0.0.1")
 BACKEND_SERVER_PORT = os.getenv("BACKEND_SERVER_PORT", "2001")
@@ -30,9 +30,10 @@ BACKEND_SESSION = requests.session()
 SERVER_LOCATION = os.getenv("SERVER_LOCATION", "http://127.0.0.1:2000")
 REACT_UI_LOCATION = os.getenv("REACT_UI_LOCATION", "/watertap_ui/")
 REACT_BACKEND_LINK = os.getenv("REACT_BACKEND_LINK", "http://localhost:8002")
+
 app = Flask(
     __name__,
-    static_folder=WATERTAP_UI_PATH,
+    static_folder='static',
     static_url_path="/",
 )
 
@@ -94,7 +95,7 @@ def inplace_change(location, filename, old_string=None, new_string=None, modname
 def ui_index(user):
     print("watertaup", user)
     path = inplace_change(
-        f"{WATERTAP_UI_PATH}",
+        f"{WATERTAP_UI_PATH}/static",
         "index.html",
         f"{REACT_UI_LOCATION}?(.*?)",
         f"/watertap_ui/{user}/",
@@ -120,18 +121,8 @@ def ui(user, path):
             )
         else:
             raise ValueError
-    elif "static" not in path:
-        path = "static/" + path
-    # if ".css" in path:# and ".css.map" not in path:
-    #     if ".css.map" not in path:
-    #         path = inplace_change(
-    #             f"{WATERTAP_UI_PATH}/ui/build/static/",
-    #             path,
-    #             "/watertap_ui/?(.*?)/",
-    #             f"watertap_ui/{user}/",
-    #             modname=user,
-    #         )
-    #     path = 'static/'+path
+    if "static" in path:
+        path = path.replace('static/', '')
     print("done changing, sending file", path)
     result = app.send_static_file(path)
     print("result", result)
@@ -156,7 +147,7 @@ def get_port(user, path):
 def send_user_name(name, userid, backend):
     global BACKEND_SESSION
     global BACKEND_SERVER
-    url = f"{BACKEND_SERVER}/new_user_request"
+    url = f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}/new_user_request"
     payload = {"username": name, "id": userid, "backend": backend}
     BACKEND_SESSION.post(url, json=payload)
 
@@ -171,7 +162,7 @@ def encode(string_value):
 def start_new_ui_instance():
     print(request)
     username = request.form["username"]
-    pwd = request.form["pwd"]
+    pwd = request.form["password"]
     print("Got username and pwd", username, pwd)
     username_id = encode(f"{username}:{pwd}")
     backend = encode(f"{pwd}")
@@ -257,7 +248,7 @@ def proxy(user, path):
             req_string,
         )
         print(
-            f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}{path}", req_string
+            f"{BACKEND_SERVER}:{path}", req_string
         )  # , request.method)
         ACTIVE_SESSIONS = get_active_session(user)
         if req_string != "":
@@ -265,7 +256,7 @@ def proxy(user, path):
         if request.method == "GET":
             ts = time.time()
             resp = ACTIVE_SESSIONS[user].get(
-                f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}{path}", timeout=None
+                f"{BACKEND_SERVER}:{path}", timeout=None
             )
             print("get", time.time() - ts)
             ts = time.time()
@@ -294,7 +285,7 @@ def proxy(user, path):
         elif request.method == "POST":
             # print(request.get_data())
             resp = ACTIVE_SESSIONS[user].post(
-                f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}{path}", data=request.get_data()
+                f"{BACKEND_SERVER}:{path}", data=request.get_data()
             )  # json=request.get_json())
             excluded_headers = [
                 # "content-encoding",
