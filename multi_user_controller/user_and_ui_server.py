@@ -239,20 +239,22 @@ def proxy(user, path):
     print("original_path", path)
 
     path = get_port(user, path)
+    
     if path != False:
         req_string = request.query_string.decode()
-        print(
-            "sent_path",
-            f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}/watertap_ui_backend/{user}/{path}",
-            "req str",
-            req_string,
-        )
-        print(
+        # print(
+        #     "sent_path",
+        #     f"{BACKEND_SERVER}:{BACKEND_SERVER_PORT}/watertap_ui_backend/{user}/{path}",
+        #     "req str",
+        #     req_string,
+        # )
+        print("Backend request forward",
             f"{BACKEND_SERVER}:{path}", req_string
         )  # , request.method)
         ACTIVE_SESSIONS = get_active_session(user)
         if req_string != "":
             path = f"{path}?{req_string}"
+        
         if request.method == "GET":
             ts = time.time()
             resp = ACTIVE_SESSIONS[user].get(
@@ -285,7 +287,7 @@ def proxy(user, path):
         elif request.method == "POST":
             # print(request.get_data())
             resp = ACTIVE_SESSIONS[user].post(
-                f"{BACKEND_SERVER}:{path}", data=request.get_data()
+                f"{BACKEND_SERVER}:{path}", data=request.get_data(), timeout=None
             )  # json=request.get_json())
             excluded_headers = [
                 # "content-encoding",
@@ -312,8 +314,9 @@ def proxy(user, path):
             )
             response = Response(resp.content, resp.status_code, headers)
         return response
-
+    else:
+        print("got request", path)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=2000)
+    # app.run(debug=True, port=2000)
     serve(app, host="127.0.0.1", port=2000, threads=7)

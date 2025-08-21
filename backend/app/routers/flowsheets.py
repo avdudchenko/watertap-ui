@@ -99,8 +99,10 @@ async def select_option(id_: str, request: Request) -> FlowsheetExport:
     Returns:
         Flowsheet export model
     """
+    print("getting backend option")
     req = await request.json()
     # input_data = req["input_data"]
+    print('BACKEND OPTION', req, req["new_option"])
     option_name = req["option_name"]
     new_option = req["new_option"]
 

@@ -156,6 +156,11 @@ The following steps assume that:
 4. Watertap and Watertap-ui directories must be inside of the same parent directory. 
 5. `watertap-ui-env` Conda environment is active
 
+# Configuring UI environmnet
+
+The user can adjust webaddress for front end, backend end, and location of databases created by the backend through react .env file. To adjust defualt settings:
+1. create .env.local in /frontend folder. This file will not be tracked by git. 
+2. To change front end address and port, create variable 
 ### 1. Transfer Entry points
 
 ```sh
